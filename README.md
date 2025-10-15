@@ -8,7 +8,7 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
 
 - **Discord Linked Roles Integration:** Connects user's XAuthConnect account to their Discord profile.
 - **XAuth Username Display:** Shows the XAuth username in Discord's linked roles section.
-- **Authorization Code Grant Flow:** Securely handles the OAuth2 authorization flow.
+- **Localization Support:** Discord command descriptions are localized, with support for multiple languages (e.g., English, Ukrainian). Easily extendable to other languages by adding new locale files.
 - **Database Storage:** Stores linked user data (Discord ID, XAuth ID, tokens) in a PostgreSQL database.
 - **Interactive CLI:** Manage the bot with commands directly from the console.
 - **Automated Pruning:** Remove linked users who are no longer in the Discord server.
@@ -102,6 +102,23 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
    - **`discord.publicKey`:** The public key for your Discord Application, used for verifying interaction signatures. Obtain this from your Discord Application's General Information page.
    - **`xauth.*`:** Credentials and URLs for your XAuthConnect Authorization Server.
 
+   **Note on Redirect URIs:**
+   - The `REDIRECT_URI` in your `.env` file is the callback URL for your Discord Application's OAuth2 flow, pointing back to your bot.
+   - The `xauth.redirectUri` within each community's configuration in `config.json` is the redirect URI that your XAuthConnect Authorization Server uses to send users back to your bot after successful authentication. Ensure both are correctly configured and match their respective application settings.
+
+### Discord Bot Permissions and Intents
+
+For the bot to function correctly, especially for features like `prune` and handling interactions, you need to configure specific permissions and enable certain [Privileged Gateway Intents](https://discord.com/developers/docs/topics/gateway#privileged-intents) in your Discord Developer Portal.
+
+**Required Permissions (for your bot role in Discord):**
+- `Send Messages` (for basic command responses)
+- `Use Slash Commands` (for interacting with slash commands)
+
+**Required Privileged Gateway Intents (in Discord Developer Portal -> Your Application -> Bot -> Privileged Gateway Intents):**
+- `GUILD_MEMBERS_READ`: **Required for the `prune` command** to check if users are still in the guild. Without this, the `prune` command will not work correctly.
+
+Ensure these are properly configured to avoid unexpected behavior.
+
 ### Discord Linked Roles and Multiple Communities
 
 Discord's Linked Roles feature is tied to a specific **Discord Application**. This means that for a single Discord Application, only **one `platform_name` and one `platform_username`** can be displayed in a user's profile.
@@ -152,123 +169,44 @@ To get the ID of a Discord server (guild), you need to enable Developer Mode in 
    - `prune`: Removes users from the database who are no longer in their respective Discord servers. Requires `guildId` and `botToken` in `config.json` and `GUILD_MEMBERS_READ` intent for the bot.
    - `refresh-all`: Refreshes the Discord linked role metadata for all users in the database.
 
-### Setting up Interaction Endpoint with Cloudflare Worker
+### Exposing Your Bot to the Internet (for Discord Interactions)
 
-Cloudflare Workers provide a robust, scalable, and globally distributed solution for handling Discord interactions, especially for production environments. They act as a proxy, receiving interactions from Discord, verifying their authenticity, and then forwarding them to your bot's actual server (which can be running locally or on a private VPS).
+For Discord to send interactions (like slash commands) to your bot, your bot's interaction endpoint must be publicly accessible. This is crucial for both local development and production deployments. Below are two common methods:
 
-#### 1. Create a Cloudflare Worker
+#### 1. Ngrok (for Local Development)
 
-Go to your Cloudflare dashboard, navigate to "Workers & Pages", and create a new application. Choose "Create Worker".
+Ngrok creates a secure tunnel from a public endpoint to a locally running service. It's ideal for testing your bot during development.
 
-#### 2. Worker Script
+1. **Install Ngrok:** Follow the instructions on the [Ngrok website](https://ngrok.com/download).
+2. **Run Ngrok:** In your terminal, start Ngrok to expose your bot's port (default 3000):
+   ```bash
+   ngrok http 3000
+   ```
+3. **Copy Public URL:** Ngrok will provide a public HTTPS URL (e.g., `https://xxxx-xxxx-xxxx-xxxx.ngrok-free.app`).
+4. **Update Discord Application:** Go to your Discord Developer Portal -> Your Application -> General Information, and set the "Interaction Endpoint URL" to your Ngrok public URL.
+5. **Update `REDIRECT_URI`:** If you are using the OAuth2 flow, update the `REDIRECT_URI` in your bot's `.env` file to use the Ngrok public URL (e.g., `REDIRECT_URI=https://xxxx-xxxx-xxxx-xxxx.ngrok-free.app/discord/callback`).
 
-Use a script similar to the following. This script will verify the Discord signature and forward the interaction to your bot's backend. You will need to configure your bot's backend URL and the Discord Application Public Keys.
+#### 2. Cloudflare Tunnel (for Production/Stable Environments)
 
-```javascript
-// worker.js
+Cloudflare Tunnel securely connects your origin server (where your bot is hosted) to Cloudflare's network without exposing your IP address. It's a more robust solution for production.
 
-// IMPORTANT: For a multi-community setup, you would typically store these public keys
-// and bot backend URLs in Cloudflare Workers KV storage or as Worker secrets,
-// indexed by the Discord Application ID (interaction.application_id).
-// For this example, we'll use a simplified approach.
+1. **Install `cloudflared`:** Follow the instructions on the [Cloudflare Developers documentation](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/).
+2. **Authenticate `cloudflared`:** Run `cloudflared tunnel login` and follow the browser prompts.
+3. **Create a Tunnel:** `cloudflared tunnel create <TUNNEL_NAME>`
+4. **Create a Configuration File (`config.yml`):** Create a file (e.g., `~/.cloudflared/config.yml` or in your project directory) for your tunnel:
+   ```yaml
+   tunnel: <TUNNEL_UUID>
+   credentials-file: /root/.cloudflared/<TUNNEL_UUID>.json
 
-// Replace with your bot's actual backend URL (e.g., http://your-vps-ip:3000/discord/interactions)
-// If running locally, you'd still need a tunnel (like ngrok) from your local machine to a public endpoint,
-// and the Worker would forward to that public endpoint.
-const BOT_BACKEND_URL = "http://localhost:3000/discord/interactions"; // Replace with your bot's actual backend URL
-
-// Map of Discord Application ID to its Public Key
-// You will need to populate this map with the clientId and publicKey from your config.json
-const DISCORD_PUBLIC_KEYS = {
-  "YOUR_DISCORD_CLIENT_ID_1": "YOUR_DISCORD_APPLICATION_PUBLIC_KEY_1",
-  "YOUR_DISCORD_CLIENT_ID_2": "YOUR_DISCORD_APPLICATION_PUBLIC_KEY_2",
-  // Add all your configured Discord Applications here
-};
-
-async function verifySignature(request, publicKey) {
-  const signature = request.headers.get('x-signature-ed25519');
-  const timestamp = request.headers.get('x-signature-timestamp');
-  const body = await request.clone().arrayBuffer();
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    hexToUint8Array(publicKey),
-    { name: 'Ed25519', namedCurve: 'Ed25519' },
-    false,
-    ['verify']
-  );
-
-  return crypto.subtle.verify(
-    'Ed25519',
-    key,
-    hexToUint8Array(signature),
-    encoder.encode(timestamp + new TextDecoder().decode(body))
-  );
-}
-
-function hexToUint8Array(hex) {
-  return new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-}
-
-async function handleRequest(request) {
-  if (request.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
-
-  const interactionBody = await request.clone().json();
-  const clientId = interactionBody.application_id;
-
-  const publicKey = DISCORD_PUBLIC_KEYS[clientId];
-
-  if (!publicKey) {
-    return new Response('Public Key not found for this Application ID', { status: 401 });
-  }
-
-  const isValid = await verifySignature(request, publicKey);
-
-  if (!isValid) {
-    return new Response('Invalid Signature', { status: 401 });
-  }
-
-  // Handle PING (Discord sends PINGs to verify the endpoint)
-  if (interactionBody.type === 1) { // PING
-    return new Response(JSON.stringify({ type: 1 }), { headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // Forward to your bot server
-  const botResponse = await fetch(BOT_BACKEND_URL, {
-    method: 'POST',
-    headers: request.headers, // Forward all headers, including signature
-    body: await request.text() // Forward the raw body
-  });
-
-  return botResponse;
-}
-
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
-});
-```
-
-#### 3. Deploy the Worker
-
-Deploy your Worker script. Cloudflare will provide a public URL for your Worker (e.g., `https://your-worker-name.your-username.workers.dev`).
-
-#### 4. Update Discord Application's Interaction Endpoint URL
-
-- Copy the public URL of your deployed Cloudflare Worker.
-- Go to your Discord Developer Portal -> Your Application -> General Information.
-- Set the "Interaction Endpoint URL" to your Worker's URL: `https://your-worker-name.your-username.workers.dev`.
-
-#### 5. Update `REDIRECT_URI` in your bot's `.env`
-
-If your bot's backend is running on a public server, update the `REDIRECT_URI` in your bot's `.env` file to reflect its public address (e.g., `REDIRECT_URI=http://your-vps-ip:3000/discord/callback`). If your bot is still running locally and you are using `ngrok` to expose it, the `BOT_BACKEND_URL` in the Worker script should point to your `ngrok` URL, and your bot's `REDIRECT_URI` should also use the `ngrok` URL.
-
-#### 6. Test
-
-Now, when you use a slash command in Discord, it should be routed through your Cloudflare Worker to your bot.
-
+   ingress:
+     - hostname: your-bot-domain.com
+       service: http://localhost:3000 # Or your bot's internal IP:port
+     - service: http_status:404
+   ```
+   Replace `<TUNNEL_UUID>` with your tunnel's UUID and `your-bot-domain.com` with your desired public domain.
+5. **Run the Tunnel:** `cloudflared tunnel run <TUNNEL_NAME>`
+6. **Update Discord Application:** Go to your Discord Developer Portal -> Your Application -> General Information, and set the "Interaction Endpoint URL" to your public domain (e.g., `https://your-bot-domain.com/discord/interactions`).
+7. **Update `REDIRECT_URI`:** Update the `REDIRECT_URI` in your bot's `.env` file to use your public domain (e.g., `REDIRECT_URI=https://your-bot-domain.com/discord/callback`).
 
 ## License
 
