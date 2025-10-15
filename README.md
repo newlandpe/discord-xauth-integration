@@ -208,6 +208,18 @@ Cloudflare Tunnel securely connects your origin server (where your bot is hosted
 6. **Update Discord Application:** Go to your Discord Developer Portal -> Your Application -> General Information, and set the "Interaction Endpoint URL" to your public domain (e.g., `https://your-bot-domain.com/discord/interactions`).
 7. **Update `REDIRECT_URI`:** Update the `REDIRECT_URI` in your bot's `.env` file to use your public domain (e.g., `REDIRECT_URI=https://your-bot-domain.com/discord/callback`).
 
+## Contributing
+
+Contributions are welcome and appreciated! Here's how you can contribute:
+
+1. Fork the project on GitHub.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
+
+Please make sure to update tests as appropriate and adhere to the existing coding style.
+
 ## License
 
 This project is licensed under the CSSM Unlimited License v2.0 (CSSM-ULv2). See the [LICENSE](LICENSE) file for details.
