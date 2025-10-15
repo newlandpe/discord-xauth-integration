@@ -196,7 +196,7 @@ Cloudflare Tunnel securely connects your origin server (where your bot is hosted
 4. **Create a Configuration File (`config.yml`):** Create a file (e.g., `~/.cloudflared/config.yml` or in your project directory) for your tunnel:
    ```yaml
    tunnel: <TUNNEL_UUID>
-   credentials-file: /root/.cloudflared/<TUNNEL_UUID>.json
+   credentials-file: /home/.cloudflared/<TUNNEL_UUID>.json
 
    ingress:
      - hostname: your-bot-domain.com
