@@ -36,7 +36,7 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
    npm install
    ```
 
-3. **Configure Environment Variables (`.env` file):
+3. **Configure Environment Variables (`.env` file):**
    Create a `.env` file in the project root based on `.env.example`.
    ```
    # Discord OAuth2 Redirect URI (must match your Discord Application settings)
