@@ -1,0 +1,22 @@
+{
+  "NO_LINKED_ACCOUNT": "No linked account found. Please link your account first.",
+  "CONFIGURATION_ERROR_SITE_NOT_FOUND": "Configuration error: Site not found.",
+  "UPDATE_SUCCESS": "Your XAuthConnect linked role data has been updated!",
+  "UPDATE_FAILURE": "Failed to update your XAuthConnect linked role data. Your token might be expired.",
+  "PONG": "Pong!",
+  "UNKNOWN_COMMAND": "Unknown command.",
+  "UNKNOWN_INTERACTION_TYPE": "Unknown interaction type.",
+  "USER_NOT_LINKED_FOR_COMMUNITY": "Discord user <@{userId}> is not linked to an XAuth account for this community.",
+  "USER_LINKED_TO_XAUTH": "Discord user <@{userId}> is linked to XAuth account: **{xauthUsername}**",
+  "PLEASE_SPECIFY_USER_TO_REFRESH": "Please specify a user to refresh.",
+  "NO_LINKED_ACCOUNT_FOR_USER": "No linked account found for <@{userId}>.",
+  "REFRESH_SUCCESS": "XAuthConnect linked role data for <@{userId}> has been updated!",
+  "REFRESH_FAILURE": "Failed to update XAuthConnect linked role data for <@{userId}>. Their token might be expired.",
+  "COMMAND_UPDATE_DESCRIPTION": "Update your XAuthConnect linked role data.",
+  "COMMAND_PING_DESCRIPTION": "Check if the bot is alive.",
+  "COMMAND_WHOIS_DESCRIPTION": "Shows the linked XAuth username for a Discord user.",
+  "COMMAND_WHOIS_OPTION_USER_DESCRIPTION": "The Discord user to check.",
+  "COMMAND_MYINFO_DESCRIPTION": "Shows your linked XAuth username.",
+  "COMMAND_REFRESH_DESCRIPTION": "Manually refreshes the linked role metadata for a specific Discord user.",
+  "COMMAND_REFRESH_OPTION_USER_DESCRIPTION": "The Discord user whose data to refresh."
+}

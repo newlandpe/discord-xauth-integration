@@ -1,0 +1,22 @@
+{
+  "NO_LINKED_ACCOUNT": "Не знайдено прив'язаного облікового запису. Будь ласка, спочатку прив'яжіть свій обліковий запис.",
+  "CONFIGURATION_ERROR_SITE_NOT_FOUND": "Помилка конфігурації: Сайт не знайдено.",
+  "UPDATE_SUCCESS": "Ваші дані прив'язаної ролі XAuthConnect оновлено!",
+  "UPDATE_FAILURE": "Не вдалося оновити дані вашої прив'язаної ролі XAuthConnect. Ваш токен може бути прострочений.",
+  "PONG": "Понг!",
+  "UNKNOWN_COMMAND": "Невідома команда.",
+  "UNKNOWN_INTERACTION_TYPE": "Невідомий тип взаємодії.",
+  "USER_NOT_LINKED_FOR_COMMUNITY": "Користувач Discord <@{userId}> не прив'язаний до облікового запису XAuth для цієї спільноти.",
+  "USER_LINKED_TO_XAUTH": "Користувач Discord <@{userId}> прив'язаний до облікового запису XAuth: **{xauthUsername}**",
+  "PLEASE_SPECIFY_USER_TO_REFRESH": "Будь ласка, вкажіть користувача для оновлення.",
+  "NO_LINKED_ACCOUNT_FOR_USER": "Не знайдено прив'язаного облікового запису для <@{userId}>.",
+  "REFRESH_SUCCESS": "Дані прив'язаної ролі XAuthConnect для <@{userId}> оновлено!",
+  "REFRESH_FAILURE": "Не вдалося оновити дані прив'язаної ролі XAuthConnect для <@{userId}>. Їхній токен може бути прострочений.",
+  "COMMAND_UPDATE_DESCRIPTION": "Оновити дані прив'язаної ролі XAuthConnect.",
+  "COMMAND_PING_DESCRIPTION": "Перевірити, чи бот працює.",
+  "COMMAND_WHOIS_DESCRIPTION": "Показує прив'язаний нікнейм XAuth для користувача Discord.",
+  "COMMAND_WHOIS_OPTION_USER_DESCRIPTION": "Користувач Discord для перевірки.",
+  "COMMAND_MYINFO_DESCRIPTION": "Показує ваш прив'язаний нікнейм XAuth.",
+  "COMMAND_REFRESH_DESCRIPTION": "Вручну оновлює метадані прив'язаної ролі для конкретного користувача Discord.",
+  "COMMAND_REFRESH_OPTION_USER_DESCRIPTION": "Користувач Discord, дані якого потрібно оновити."
+}

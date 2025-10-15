@@ -1,0 +1,38 @@
+{
+    "my_community": {
+        "discord": {
+            "clientId": "YOUR_DISCORD_CLIENT_ID",
+            "clientSecret": "YOUR_DISCORD_CLIENT_SECRET",
+            "guildId": "YOUR_DISCORD_GUILD_ID",
+            "botToken": "YOUR_DISCORD_BOT_TOKEN",
+            "publicKey": "YOUR_DISCORD_APPLICATION_PUBLIC_KEY"
+        },
+        "xauth": {
+            "clientId": "YOUR_XAUTH_CLIENT_ID",
+            "clientSecret": "YOUR_XAUTH_CLIENT_SECRET",
+            "redirectUri": "http://localhost:3000/xauth/callback",
+            "authorizationUrl": "https://xauth.server/oauth/authorize",
+            "tokenUrl": "https://xauth.server/oauth/token",
+            "userinfoUrl": "https://xauth.server/oauth/userinfo",
+            "scopes": ["profile:uuid", "profile:nickname"]
+        }
+    },
+    "another_community": {
+        "discord": {
+            "clientId": "ANOTHER_DISCORD_CLIENT_ID",
+            "clientSecret": "ANOTHER_DISCORD_CLIENT_SECRET",
+            "guildId": "ANOTHER_DISCORD_GUILD_ID",
+            "botToken": "ANOTHER_DISCORD_BOT_TOKEN",
+            "publicKey": "ANOTHER_DISCORD_APPLICATION_PUBLIC_KEY"
+        },
+        "xauth": {
+            "clientId": "ANOTHER_XAUTH_CLIENT_ID",
+            "clientSecret": "ANOTHER_XAUTH_CLIENT_SECRET",
+            "redirectUri": "http://localhost:3000/xauth/callback",
+            "authorizationUrl": "https://xauth.server/oauth/authorize",
+            "tokenUrl": "https://xauth.server/oauth/token",
+            "userinfoUrl": "https://xauth.server/oauth/userinfo",
+            "scopes": ["profile:uuid", "profile:nickname"]
+        }
+    }
+}
