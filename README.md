@@ -1,6 +1,6 @@
 # Discord XAuth Integration Bot
 
-[![License](https://img.shields.io/badge/License-CSSM--ULv2-blue.svg)](LICENSE)
+[![License: CSSM Unlimited License v2.0](https://img.shields.io/badge/License-CSSM%20Unlimited%20License%20v2.0-blue.svg?logo=opensourceinitiative)](LICENSE)
 
 This project provides a Node.js bot to integrate Discord linked roles with an XAuthConnect authorization server. It allows users to link their Minecraft (XAuthConnect) account to their Discord profile, displaying their XAuth username as a linked role connection.
 
