@@ -1,10 +1,10 @@
-import { log, error } from './logger.js';
-import { db } from './db.js';
+import { log, error } from '../utils/logger.js';
+import { db } from '../db/db.js';
 import axios from 'axios';
-import config from './config.json' with { type: 'json' };
-import { refreshToken, updateDiscordMetadata } from './discord_api.js';
-import { graceful } from './utils.js';
-import { t } from './i18n.js';
+import config from '../config/config.json' with { type: 'json' };
+import { refreshToken, updateDiscordMetadata } from '../discord/discord_api.js';
+import { graceful } from '../utils/utils.js';
+import { t } from '../utils/i18n.js';
 
 // Helper to generate localized descriptions
 function getLocalizedDescriptions(keyPrefix) {

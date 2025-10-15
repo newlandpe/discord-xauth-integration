@@ -11,7 +11,7 @@ function loadTranslations() {
     for (const file of localeFiles) {
         const lang = file.split('.')[0];
         try {
-            locales[lang] = JSON.parse(readFileSync(path.join(__dirname, 'locales', file), 'utf-8'));
+            locales[lang] = JSON.parse(readFileSync(path.join(__dirname, '..', '..', 'locales', file), 'utf-8'));
         } catch (err) {
             console.error(`Error loading locale file ${file}:`, err);
             locales[lang] = {}; // Fallback to empty object

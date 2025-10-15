@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { log, error } from './logger.js';
+import { log, error } from '../utils/logger.js';
 
 const pool = new pg.Pool({
     host: process.env.DB_HOST,
