@@ -25,6 +25,8 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
 
 ### Steps
 
+To begin, you will need to retrieve the project's source code, install all necessary dependencies, and then proceed to the configuration phase where all the Discord, XAuth, and database connection details are specified in the appropriate files:
+
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/your-repo/discord-xauth-integration.git
@@ -53,7 +55,7 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
    ```
    **Important:** The `REDIRECT_URI` must exactly match the one configured in your Discord Application's OAuth2 settings.
 
-4. **Configure Communities (`config.json` file):
+4. **Configure Communities (`config.json` file):**
    Create a `config.json` file in the project root based on `config.json.example`. This file defines your communities (e.g., Minecraft servers) and their respective Discord and XAuthConnect application credentials.
    ```json
    {
@@ -142,6 +144,8 @@ To get the ID of a Discord server (guild), you need to enable Developer Mode in 
    - Click "Copy Server ID".
 
 ## Usage
+
+After a successful installation and configuration, integrating the bot into your community workflow involves starting the bot, registering its slash commands, and utilizing the powerful command-line interface for ongoing management:
 
 1. **Start the bot:**
    ```bash
