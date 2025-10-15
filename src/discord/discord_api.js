@@ -2,7 +2,7 @@ import axios from 'axios';
 import OAuth from 'discord-oauth2';
 import { log, error } from '../utils/logger.js';
 import { db } from '../db/db.js';
-import config from '../config/config.json' with { type: 'json' };
+import config from '../../config.json' with { type: 'json' };
 import { t } from '../utils/i18n.js';
 
 const discordOauth = new OAuth();

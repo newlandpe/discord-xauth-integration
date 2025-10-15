@@ -9,7 +9,7 @@ import OAuth from 'discord-oauth2';
 import { updateDiscordMetadata, handleDiscordInteraction } from './discord/discord_api.js';
 import { XAuthConnect } from './oauth/provider.js';
 import { db, initializeDb } from './db/db.js';
-import config from './config/config.json' with { type: 'json' };
+import config from '../config.json' with { type: 'json' };
 import { log, error } from './utils/logger.js';
 import { handleCommand } from './commands/commands.js';
 import { graceful } from './utils/utils.js';
