@@ -71,9 +71,9 @@ To begin, you will need to retrieve the project's source code, install all neces
                "clientId": "YOUR_XAUTH_CLIENT_ID",
                "clientSecret": "YOUR_XAUTH_CLIENT_SECRET",
                "redirectUri": "http://localhost:3000/xauth/callback",
-               "authorizationUrl": "http://xauth-server.com/oauth/authorize",
-               "tokenUrl": "http://xauth-server.com/oauth/token",
-               "userinfoUrl": "http://xauth-server.com/oauth/user",
+               "authorizationUrl": "http://xauth-server.com/xauth/authorize",
+               "tokenUrl": "http://xauth-server.com/xauth/token",
+               "userinfoUrl": "http://xauth-server.com/xauth/user",
                "scopes": ["profile:uuid", "profile:nickname"]
            }
        },
@@ -89,9 +89,9 @@ To begin, you will need to retrieve the project's source code, install all neces
                "clientId": "ANOTHER_XAUTH_CLIENT_ID",
                "clientSecret": "ANOTHER_XAUTH_CLIENT_SECRET",
                "redirectUri": "http://localhost:3000/xauth/callback",
-               "authorizationUrl": "http://xauth-server.com/oauth/authorize",
-               "tokenUrl": "http://xauth-server.com/oauth/token",
-               "userinfoUrl": "http://xauth-server.com/oauth/user",
+               "authorizationUrl": "http://xauth-server.com/xauth/authorize",
+               "tokenUrl": "http://xauth-server.com/xauth/token",
+               "userinfoUrl": "http://xauth-server.com/xauth/user",
                "scopes": ["profile:uuid", "profile:nickname"]
            }
        }
