@@ -149,7 +149,7 @@ After a successful installation and configuration, integrating the bot into your
 
 1. **Start the bot:**
    ```bash
-   node main.js
+   node app.js
    ```
    The bot will start a web server and an interactive command-line interface.
 

@@ -6,20 +6,20 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import readline from 'node:readline';
 import OAuth from 'discord-oauth2';
-import { updateDiscordMetadata, handleDiscordInteraction } from './discord/discord_api.js';
-import { XAuthConnect } from './oauth/provider.js';
-import { db, initializeDb } from './db/db.js';
-import config from '../config.json' with { type: 'json' };
-import { log, error } from './utils/logger.js';
-import { handleCommand } from './commands/commands.js';
-import { graceful } from './utils/utils.js';
+import { updateDiscordMetadata, handleDiscordInteraction } from './src/discord/discord_api.js';
+import { XAuthConnect } from './src/oauth/provider.js';
+import { db, initializeDb } from './src/db/db.js';
+import config from './config.json' with { type: 'json' };
+import { log, error } from './src/utils/logger.js';
+import { handleCommand } from './src/commands/commands.js';
+import { graceful } from './src/utils/utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tokenCache = new Map();
 const discordOauth = new OAuth();
 
 async function getHtml(fileName) {
-    return await readFile(path.join(__dirname, '..', 'views', fileName), 'utf-8');
+    return await readFile(path.join(__dirname, 'views', fileName), 'utf-8');
 }
 
 const server = createServer(async (req, res) => {
