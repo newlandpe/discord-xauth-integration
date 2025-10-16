@@ -29,7 +29,7 @@ To begin, you will need to retrieve the project's source code, install all neces
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-repo/discord-xauth-integration.git
+   git clone https://github.com/newlandpe/discord-xauth-integration.git
    cd discord-xauth-integration
    ```
 
