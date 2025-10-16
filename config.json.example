@@ -1,5 +1,6 @@
 {
     "my_community": {
+        "displayName": "My Community",
         "discord": {
             "clientId": "YOUR_DISCORD_CLIENT_ID",
             "clientSecret": "YOUR_DISCORD_CLIENT_SECRET",
@@ -18,6 +19,7 @@
         }
     },
     "another_community": {
+        "displayName": "Another Community",
         "discord": {
             "clientId": "ANOTHER_DISCORD_CLIENT_ID",
             "clientSecret": "ANOTHER_DISCORD_CLIENT_SECRET",

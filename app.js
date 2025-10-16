@@ -204,7 +204,13 @@ const server = createServer(async (req, res) => {
     }
 
     const indexHtml = await getHtml('index.html');
-    res.writeHead(200, {'Content-Type': 'text/html'}).end(indexHtml);
+    const communityLinks = Object.keys(config).map(site => {
+        const displayName = config[site].displayName || site;
+        return `<a href="/start/${site}" class="btn btn-primary m-2">${displayName}</a>`;
+    }).join('');
+
+    const renderedHtml = indexHtml.replace('{{community_links}}', communityLinks);
+    res.writeHead(200, {'Content-Type': 'text/html'}).end(renderedHtml);
 });
 
 const rl = readline.createInterface({

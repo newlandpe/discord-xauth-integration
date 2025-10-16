@@ -14,6 +14,16 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
 - **Automated Pruning:** Remove linked users who are no longer in the Discord server.
 - **Metadata Refresh:** Update existing linked role metadata for all users.
 
+## Routes
+
+The application exposes the following routes:
+
+- `GET /`: Displays the main page of the application.
+- `GET /start/:site`: Initiates the account linking process for a specific community (site). This redirects the user to Discord for authorization.
+- `POST /discord/interactions`: The endpoint for receiving Discord interactions (e.g., slash commands).
+- `GET /discord/callback`: The redirect URI for Discord OAuth2. Handles the authorization code exchange.
+- `GET /xauth/callback`: The redirect URI for XAuthConnect OAuth2. Handles the authorization code exchange and links the accounts.
+
 ## Installation
 
 ### Prerequisites
@@ -60,6 +70,7 @@ To begin, you will need to retrieve the project's source code, install all neces
    ```json
    {
        "my_community": {
+           "displayName": "My Community",
            "discord": {
                "clientId": "YOUR_DISCORD_CLIENT_ID",
                "clientSecret": "YOUR_DISCORD_CLIENT_SECRET",
@@ -78,6 +89,7 @@ To begin, you will need to retrieve the project's source code, install all neces
            }
        },
        "another_community": {
+           "displayName": "Another Community",
            "discord": {
                "clientId": "ANOTHER_DISCORD_CLIENT_ID",
                "clientSecret": "ANOTHER_DISCORD_CLIENT_SECRET",
@@ -98,6 +110,7 @@ To begin, you will need to retrieve the project's source code, install all neces
    }
    ```
    - **`my_community` (and `another_community`):** These are arbitrary names you choose to identify your different communities/servers.
+   - **`displayName`:** A user-friendly name for the community that will be displayed on the main page. If not provided, the community key (e.g., `my_community`) will be used.
    - **`discord.clientId`, `discord.clientSecret`:** Obtained from your Discord Application's OAuth2 settings.
    - **`discord.guildId`:** The ID of the Discord server (guild) associated with this community. See [How to get Guild ID](#how-to-get-guild-id).
    - **`discord.botToken`:** The token for your Discord bot. Ensure your bot has the `GUILD_MEMBERS_READ` privileged intent enabled in the Discord Developer Portal for the `prune` command to work.
