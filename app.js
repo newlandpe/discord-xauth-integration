@@ -99,7 +99,7 @@ const server = createServer(async (req, res) => {
                 grantType: 'authorization_code',
                 code: code,
                 scope: ['identify', 'role_connections.write'],
-                redirectUri: process.env.REDIRECT_URI + '/discord/callback',
+                redirectUri: process.env.REDIRECT_URI,
             });
 
             const user = await discordOauth.getUser(tokenResponse.access_token);
@@ -195,7 +195,7 @@ const server = createServer(async (req, res) => {
         const authUrl = discordOauth.generateAuthUrl({
             clientId: config[site].discord.clientId,
             scope: ['identify', 'role_connections.write'],
-            redirectUri: process.env.REDIRECT_URI + '/discord/callback',
+            redirectUri: process.env.REDIRECT_URI,
             responseType: 'code',
             state: site,
         });
