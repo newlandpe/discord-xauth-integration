@@ -86,6 +86,13 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/discord/callback') {
         const code = url.searchParams.get('code');
         const state = url.searchParams.get('state');
+        const errorParam = url.searchParams.get('error');
+
+        if (errorParam === 'access_denied') {
+            const deniedHtml = await getHtml('access_denied.html');
+            res.writeHead(200, {'Content-Type': 'text/html'}).end(deniedHtml);
+            return;
+        }
 
         if (!code || !state || !config[state]) {
             res.writeHead(400).end('Invalid request');
