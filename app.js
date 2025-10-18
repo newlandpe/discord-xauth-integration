@@ -211,7 +211,7 @@ const server = createServer(async (req, res) => {
     }
 
     const indexHtml = await getHtml('index.html');
-    const linkButton = `<a href="/start" class="btn btn-primary m-2">${config.displayName || 'Link Account'}</a>`;
+    const linkButton = `<a href="/start" class="btn btn-primary m-2">Link Account</a>`;
 
     const renderedHtml = indexHtml.replace('{{link_button}}', linkButton);
     res.writeHead(200, {'Content-Type': 'text/html'}).end(renderedHtml);

@@ -1,5 +1,4 @@
 {
-    "displayName": "My Server Name",
     "platformName": "XAuthConnect",
     "discord": {
         "clientId": "YOUR_DISCORD_CLIENT_ID",

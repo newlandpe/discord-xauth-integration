@@ -89,7 +89,6 @@ To begin, you will need to retrieve the project's source code, install all neces
        }
    }
    ```
-   - **`displayName`:** A user-friendly name for your server/application that will be displayed on the main page.
    - **`platformName`:** The name that will be displayed in the user's Discord profile under the "Connections" section.
    - **`discord.clientId`, `discord.clientSecret`:** Obtained from your Discord Application's OAuth2 settings.
    - **`discord.guildId`:** The ID of the Discord server (guild) where the bot operates. Required for the `prune` command. See [How to get Guild ID](#how-to-get-guild-id).
