@@ -7,6 +7,21 @@ import { t } from '../utils/i18n.js';
 
 const discordOauth = new OAuth();
 
+async function sendWebhookMessage(webhookUrl, payload) {
+    try {
+        await axios.post(webhookUrl, payload);
+    } catch (err) {
+        if (err.response && err.response.status === 429) {
+            const retryAfter = err.response.data.retry_after || 1; // Default to 1 second if not specified
+            log(`Rate limited by Discord webhook. Retrying after ${retryAfter} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+            await axios.post(webhookUrl, payload); // Retry the request
+        } else {
+            throw err; // Re-throw other errors
+        }
+    }
+}
+
 export async function updateDiscordMetadata(accessToken, xauthUsername, metadata) {
     const url = `https://discord.com/api/v10/users/@me/applications/${config.discord.clientId}/role-connection`;
     const body = {
@@ -25,7 +40,7 @@ export async function updateDiscordMetadata(accessToken, xauthUsername, metadata
         log(`Successfully updated Discord linked role metadata for ${xauthUsername}.`);
 
     } catch (err) {
-        error(`Error updating Discord metadata: ${err.response?.data || err.message}`);
+        error(`Error updating Discord metadata: ${JSON.stringify(err.response?.data || err.message || err)}`);
     }
 }
 
@@ -104,7 +119,7 @@ export async function handleDiscordInteraction(interaction) {
                     const followUp = async () => {
                         const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1', [userId]);
                         if (!rows.length) {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
+                            await sendWebhookMessage(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('NO_LINKED_ACCOUNT', lang),
                                 flags: 64
                             });
@@ -117,12 +132,12 @@ export async function handleDiscordInteraction(interaction) {
 
                         if (newAccessToken) {
                             await updateDiscordMetadata(newAccessToken, xauth_username, { linked: 1 });
-                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
+                            await sendWebhookMessage(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('UPDATE_SUCCESS', lang),
                                 flags: 64
                             });
                         } else {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
+                            await sendWebhookMessage(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('UPDATE_FAILURE', lang),
                                 flags: 64
                             });
@@ -157,7 +172,7 @@ export async function handleDiscordInteraction(interaction) {
                     const refreshFollowUp = async () => {
                         const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1', [userToRefreshId]);
                         if (!rows.length) {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
+                            await sendWebhookMessage(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('NO_LINKED_ACCOUNT_FOR_USER', lang, { userId: userToRefreshId }), flags: 64
                             });
                             return;
@@ -169,11 +184,11 @@ export async function handleDiscordInteraction(interaction) {
 
                         if (newAccessToken) {
                             await updateDiscordMetadata(newAccessToken, xauth_username, { linked: 1 });
-                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
+                            await sendWebhookMessage(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('REFRESH_SUCCESS', lang, { userId: userToRefreshId }), flags: 64
                             });
                         } else {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
+                            await sendWebhookMessage(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('REFRESH_FAILURE', lang, { userId: userToRefreshId }), flags: 64
                             });
                         }
