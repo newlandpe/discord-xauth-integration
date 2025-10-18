@@ -103,11 +103,10 @@ const server = createServer(async (req, res) => {
         const code = url.searchParams.get('code');
         const state = url.searchParams.get('state');
         if (url.searchParams.get('error') === 'access_denied') {
-            res.writeHead(302, { Location: '/access_denied' }).end();
+            res.writeHead(302, { Location: '/?status=access_denied' }).end();
             return;
         }
-        if (!code || !state || !stateCache.has(state)) {
-            res.writeHead(302, { Location: '/error' }).end();
+            res.writeHead(302, { Location: '/?status=error' }).end();
             return;
         }
         stateCache.delete(state);
@@ -144,7 +143,7 @@ const server = createServer(async (req, res) => {
         const code = url.searchParams.get('code');
         const state = url.searchParams.get('state');
         if (url.searchParams.get('error') === 'access_denied') {
-            res.writeHead(302, { Location: '/access_denied' }).end();
+            res.writeHead(302, { Location: '/?status=access_denied' }).end();
             return;
         }
         if (!code || !state || !tokenCache.has(state)) {
@@ -168,25 +167,10 @@ const server = createServer(async (req, res) => {
                     discord_access_token = EXCLUDED.discord_access_token, discord_refresh_token = EXCLUDED.discord_refresh_token;`;
             await db.query(upsertQuery, [discordUser.id, xauthUser.getId(), xauthUser.getNickname(), discordToken, discordRefreshToken]);
             log('Saved linked account to the database.');
-            res.writeHead(302, { Location: '/success' }).end();
+            res.writeHead(302, { Location: '/?status=success' }).end();
         } catch (err) {
-            error(`Error during XAuthConnect OAuth: ${err}`);
-            res.writeHead(302, { Location: '/error' }).end();
+            res.writeHead(302, { Location: '/?status=error' }).end();
         }
-        return;
-    }
-
-    // Static result pages
-    if (url.pathname === '/success') {
-        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('success.html'));
-        return;
-    }
-    if (url.pathname === '/access_denied') {
-        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('access_denied.html'));
-        return;
-    }
-    if (url.pathname === '/error') {
-        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('error.html'));
         return;
     }
 
