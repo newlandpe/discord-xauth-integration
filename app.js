@@ -175,9 +175,35 @@ const server = createServer(async (req, res) => {
         return;
     }
 
-    // Index page
+    // Index page and status display
     if (url.pathname === '/') {
-        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('index.html'));
+        const status = url.searchParams.get('status');
+        let htmlToServe = '';
+
+        if (status) {
+            let fileName = '';
+            switch (status) {
+                case 'success':
+                    fileName = 'success.html';
+                    break;
+                case 'error':
+                    fileName = 'error.html';
+                    break;
+                case 'access_denied':
+                    fileName = 'access_denied.html';
+                    break;
+                default:
+                    // If status is unknown, serve default index.html
+                    fileName = 'index.html';
+                    break;
+            }
+            htmlToServe = await getHtml(fileName);
+        } else {
+            // No status parameter, serve default index.html
+            htmlToServe = await getHtml('index.html');
+        }
+
+        res.writeHead(200, { 'Content-Type': 'text/html' }).end(htmlToServe);
         return;
     }
 

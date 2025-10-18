@@ -24,72 +24,7 @@
         </div>
     </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const status = urlParams.get('status');
-        const mainContentDiv = document.querySelector('.column'); // This is the main content area
-
-        if (status) {
-            let htmlFileName = '';
-            let pageTitle = '';
-
-            switch (status) {
-                case 'success':
-                    htmlFileName = 'success.html';
-                    pageTitle = 'Success';
-                    break;
-                case 'error':
-                    htmlFileName = 'error.html';
-                    pageTitle = 'Error';
-                    break;
-                case 'access_denied':
-                    htmlFileName = 'access_denied.html';
-                    pageTitle = 'Authorization Cancelled';
-                    break;
-                default:
-                    // If an unknown status, just show default content
-                    return;
-            }
-
-            try {
-                // Fetch the content of the specific status HTML file
-                const response = await fetch(htmlFileName);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const htmlContent = await response.text();
-
-                // Extract the body content from the fetched HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlContent, 'text/html');
-                const fetchedBodyContent = doc.querySelector('body > div.ui.middle.aligned.center.aligned.grid > div.column').innerHTML;
-
-                // Replace the main content area with the fetched content
-                mainContentDiv.innerHTML = fetchedBodyContent;
-                document.title = pageTitle;
-
-                // Clean the URL without reloading the page
-                window.history.replaceState({}, document.title, window.location.pathname);
-
-            } catch (e) {
-                console.error('Failed to load status page content:', e);
-                // Fallback to default content or show a generic error
-                mainContentDiv.innerHTML = `
-                    <i class="warning circle huge orange icon"></i>
-                    <h2 class="ui header">An Error Occurred</h2>
-                    <p>Failed to load status message. Please try again later.</p>
-                    <div style="margin-top: 2em;">
-                        <a href="/" class="ui button">
-                            Go to Homepage
-                        </a>
-                    </div>
-                `;
-                document.title = 'Error';
-            }
-        }
-    });
-</script>
+</body>
 
 </body>
 </html>
