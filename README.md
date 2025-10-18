@@ -69,7 +69,6 @@ To begin, you will need to retrieve the project's source code, install all neces
    Create a `config.json` file in the project root based on `config.json.example`. This file defines your application credentials and settings.
    ```json
    {
-       "displayName": "My Server Name",
        "platformName": "XAuthConnect",
        "discord": {
            "clientId": "YOUR_DISCORD_CLIENT_ID",
