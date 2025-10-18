@@ -237,6 +237,37 @@ const commands = {
             }
         }
     },
+    'set-presence': {
+        description: 'Sets the bot\'s presence. Usage: set-presence <name> <type> <status>',
+        execute: async (commandArgs, server, db, rl, erisClient) => {
+            const [name, typeStr, status] = commandArgs;
+            if (!name || !typeStr || !status) {
+                log('Usage: set-presence <name> <type> <status>');
+                log('  <name>: Activity name (e.g., "Playing a game")');
+                log('  <type>: Activity type (0=Playing, 1=Streaming, 2=Listening, 3=Watching, 5=Competing)');
+                log('  <status>: Bot status ("online", "idle", "dnd", "offline")');
+                return;
+            }
+
+            const type = parseInt(typeStr, 10);
+            if (isNaN(type) || ![0, 1, 2, 3, 5].includes(type)) {
+                log('Invalid activity type. Must be 0, 1, 2, 3, or 5.');
+                return;
+            }
+
+            if (!['online', 'idle', 'dnd', 'offline'].includes(status)) {
+                log('Invalid status. Must be "online", "idle", "dnd", or "offline".');
+                return;
+            }
+
+            try {
+                await erisClient.editStatus(status, { name, type });
+                log(`Bot presence set to: ${name} (Type: ${type}, Status: ${status})`);
+            } catch (err) {
+                error(`Error setting bot presence: ${err.message}`);
+            }
+        }
+    },
     quit: {
         description: 'Shuts down the bot gracefully.',
         execute: async (commandArgs, server, db, rl) => {
@@ -246,7 +277,7 @@ const commands = {
 
 };
 
-async function handleCommand(command, server, db, rl) {
+async function handleCommand(command, server, db, rl, erisClient) {
     const trimmedCommand = command.trim();
     if (!trimmedCommand) {
         return;

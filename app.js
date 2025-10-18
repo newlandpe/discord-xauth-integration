@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import readline from 'node:readline';
 import OAuth from 'discord-oauth2';
+import Eris from 'eris';
 import { updateDiscordMetadata, handleDiscordInteraction } from './src/discord/discord_api.js';
 import { XAuthConnect } from './src/oauth/provider.js';
 import { db, initializeDb } from './src/db/db.js';
@@ -19,6 +20,9 @@ const tokenCache = new Map();
 const stateCache = new Set();
 const discordOauth = new OAuth();
 const xauthProvider = new XAuthConnect(config.xauth);
+const erisClient = new Eris(config.discord.botToken, {
+    intents: ["guilds", "guildMessages", "guildPresences"]
+});
 
 async function getHtml(fileName) {
     return await readFile(path.join(__dirname, 'views', fileName), 'utf-8');
@@ -218,11 +222,23 @@ const rl = readline.createInterface({
 });
 
 rl.on('line', async (input) => {
-    await handleCommand(input, server, db, rl);
+    await handleCommand(input, server, db, rl, erisClient);
     rl.prompt();
 });
 
 initializeDb().then(() => {
+    erisClient.connect();
+    erisClient.on('ready', () => {
+        log('Eris client connected and ready!');
+        erisClient.user.setPresence({
+            activities: [{
+                name: 'with XAuthConnect',
+                type: 0 // Playing
+            }],
+            status: 'online'
+        });
+    });
+
     server.listen(process.env.PORT, () => {
         log(`Server running at http://localhost:${process.env.PORT}`);
         log(`Use the URL http://localhost:${process.env.PORT}/start to begin.`);
