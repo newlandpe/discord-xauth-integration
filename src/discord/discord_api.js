@@ -40,7 +40,7 @@ export async function updateDiscordMetadata(accessToken, xauthUsername, metadata
         log(`Successfully updated Discord linked role metadata for ${xauthUsername}.`);
 
     } catch (err) {
-        error(`Error updating Discord metadata: ${JSON.stringify(err.response?.data || err.message || err)}`);
+        error(`Error updating Discord metadata: ${err.response?.data || err.message}`);
     }
 }
 
