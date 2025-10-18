@@ -230,12 +230,9 @@ initializeDb().then(() => {
     erisClient.connect();
     erisClient.on('ready', () => {
         log('Eris client connected and ready!');
-        erisClient.user.setPresence({
-            activities: [{
-                name: 'with XAuthConnect',
-                type: 0 // Playing
-            }],
-            status: 'online'
+        erisClient.editStatus('online', {
+            name: 'with XAuthConnect',
+            type: 0 // Playing
         });
     });
 
