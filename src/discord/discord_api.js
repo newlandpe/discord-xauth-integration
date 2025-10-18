@@ -93,7 +93,7 @@ export async function handleDiscordInteraction(interaction) {
             // We assume all interactions are for the single configured bot.
             if (interaction.application_id !== config.discord.clientId) {
                 error(`Interaction received for unknown application_id: ${interaction.application_id}`);
-                return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: t('CONFIGURATION_ERROR_SITE_NOT_FOUND', lang), flags: 64 } };
+                return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: t('ERROR_INVALID_APPLICATION_ID', lang), flags: 64 } };
             }
 
             const lang = interaction.locale?.split('-')[0] || 'en'; // Get language from locale, default to en
@@ -102,7 +102,7 @@ export async function handleDiscordInteraction(interaction) {
                 case 'update':
                     // Defer the response immediately
                     const followUp = async () => {
-                        const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1 AND site = $2', [userId, 'default']);
+                        const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1', [userId]);
                         if (!rows.length) {
                             await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('NO_LINKED_ACCOUNT', lang),
@@ -143,7 +143,7 @@ export async function handleDiscordInteraction(interaction) {
                     if (userRows.length > 0) {
                         responseContent = t('USER_LINKED_TO_XAUTH', lang, { userId: targetUserId, xauthUsername: userRows[0].xauth_username });
                     } else {
-                        responseContent = t('USER_NOT_LINKED_FOR_COMMUNITY', lang, { userId: targetUserId });
+                        responseContent = t('USER_NOT_LINKED', lang, { userId: targetUserId });
                     }
                     return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: responseContent, flags: 64 } };
 
@@ -155,7 +155,7 @@ export async function handleDiscordInteraction(interaction) {
 
                     // Defer the response immediately
                     const refreshFollowUp = async () => {
-                        const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1 AND site = $2', [userToRefreshId, 'default']);
+                        const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1', [userToRefreshId]);
                         if (!rows.length) {
                             await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('NO_LINKED_ACCOUNT_FOR_USER', lang, { userId: userToRefreshId }), flags: 64

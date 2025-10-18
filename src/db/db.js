@@ -16,13 +16,11 @@ export const db = {
 export async function initializeDb() {
     const createTableQuery = `
         CREATE TABLE IF NOT EXISTS linked_roles (
-            discord_id VARCHAR(255) NOT NULL,
-            site VARCHAR(255) NOT NULL,
+            discord_id VARCHAR(255) PRIMARY KEY,
             xauth_id VARCHAR(255) NOT NULL,
             xauth_username VARCHAR(255) NOT NULL,
             discord_access_token TEXT NOT NULL,
-            discord_refresh_token TEXT NOT NULL,
-            PRIMARY KEY (discord_id, site)
+            discord_refresh_token TEXT NOT NULL
         );
     `;
     try {

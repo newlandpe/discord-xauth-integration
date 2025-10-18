@@ -39,7 +39,7 @@ const commands = {
 
                 log('Linked users:');
                 rows.forEach(row => {
-                    log(`  - Discord ID: ${row.discord_id}, Site: ${row.site}, XAuth Username: ${row.xauth_username}`);
+                    log(`  - Discord ID: ${row.discord_id}, XAuth Username: ${row.xauth_username}`);
                 });
             } catch (err) {
                 error(`Error fetching linked users: ${err}`);
@@ -75,8 +75,8 @@ const commands = {
                         });
                     } catch (err) {
                         if (err.response && err.response.status === 404) {
+                            // The user was not found in the guild, so remove them from the database.
                             log(`User ${discord_id} not found in guild. Removing from database.`);
-                            // Also use the 'default' site value for the DELETE query
                             await db.query('DELETE FROM linked_roles WHERE discord_id = $1', [discord_id]);
                         } else {
                             error(`Error checking user ${discord_id}: ${err.message}`);

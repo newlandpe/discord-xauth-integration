@@ -19,7 +19,7 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
 The application exposes the following routes:
 
 - `GET /`: Displays the main page of the application.
-- `GET /start/:site`: Initiates the account linking process for a specific community (site). This redirects the user to Discord for authorization.
+- `GET /start`: Initiates the account linking process. This redirects the user to Discord for authorization.
 - `POST /discord/interactions`: The endpoint for receiving Discord interactions (e.g., slash commands).
 - `GET /discord/callback`: The redirect URI for Discord OAuth2. Handles the authorization code exchange.
 - `GET /xauth/callback`: The redirect URI for XAuthConnect OAuth2. Handles the authorization code exchange and links the accounts.
