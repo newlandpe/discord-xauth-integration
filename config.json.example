@@ -1,40 +1,20 @@
 {
-    "my_community": {
-        "displayName": "My Community",
-        "discord": {
-            "clientId": "YOUR_DISCORD_CLIENT_ID",
-            "clientSecret": "YOUR_DISCORD_CLIENT_SECRET",
-            "guildId": "YOUR_DISCORD_GUILD_ID",
-            "botToken": "YOUR_DISCORD_BOT_TOKEN",
-            "publicKey": "YOUR_DISCORD_APPLICATION_PUBLIC_KEY"
-        },
-        "xauth": {
-            "clientId": "YOUR_XAUTH_CLIENT_ID",
-            "clientSecret": "YOUR_XAUTH_CLIENT_SECRET",
-            "redirectUri": "http://localhost:3000/xauth/callback",
-            "authorizationUrl": "https://xauth.server/xauth/authorize",
-            "tokenUrl": "https://xauth.server/xauth/token",
-            "userinfoUrl": "https://xauth.server/xauth/user",
-            "scopes": ["profile:uuid", "profile:nickname"]
-        }
+    "displayName": "My Server Name",
+    "platformName": "XAuthConnect",
+    "discord": {
+        "clientId": "YOUR_DISCORD_CLIENT_ID",
+        "clientSecret": "YOUR_DISCORD_CLIENT_SECRET",
+        "guildId": "YOUR_DISCORD_GUILD_ID",
+        "botToken": "YOUR_DISCORD_BOT_TOKEN",
+        "publicKey": "YOUR_DISCORD_APPLICATION_PUBLIC_KEY"
     },
-    "another_community": {
-        "displayName": "Another Community",
-        "discord": {
-            "clientId": "ANOTHER_DISCORD_CLIENT_ID",
-            "clientSecret": "ANOTHER_DISCORD_CLIENT_SECRET",
-            "guildId": "ANOTHER_DISCORD_GUILD_ID",
-            "botToken": "ANOTHER_DISCORD_BOT_TOKEN",
-            "publicKey": "ANOTHER_DISCORD_APPLICATION_PUBLIC_KEY"
-        },
-        "xauth": {
-            "clientId": "ANOTHER_XAUTH_CLIENT_ID",
-            "clientSecret": "ANOTHER_XAUTH_CLIENT_SECRET",
-            "redirectUri": "http://localhost:3000/xauth/callback",
-            "authorizationUrl": "https://xauth.server/xauth/authorize",
-            "tokenUrl": "https://xauth.server/xauth/token",
-            "userinfoUrl": "https://xauth.server/xauth/user",
-            "scopes": ["profile:uuid", "profile:nickname"]
-        }
+    "xauth": {
+        "clientId": "YOUR_XAUTH_CLIENT_ID",
+        "clientSecret": "YOUR_XAUTH_CLIENT_SECRET",
+        "redirectUri": "http://localhost:3000/xauth/callback",
+        "authorizationUrl": "https://xauth.server/xauth/authorize",
+        "tokenUrl": "https://xauth.server/xauth/token",
+        "userinfoUrl": "https://xauth.server/xauth/user",
+        "scopes": ["profile:uuid", "profile:nickname"]
     }
 }

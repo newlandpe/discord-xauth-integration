@@ -65,61 +65,41 @@ To begin, you will need to retrieve the project's source code, install all neces
    ```
    **Important:** The `REDIRECT_URI` must exactly match the one configured in your Discord Application's OAuth2 settings.
 
-4. **Configure Communities (`config.json` file):**
-   Create a `config.json` file in the project root based on `config.json.example`. This file defines your communities (e.g., Minecraft servers) and their respective Discord and XAuthConnect application credentials.
+4. **Configure Application (`config.json` file):**
+   Create a `config.json` file in the project root based on `config.json.example`. This file defines your application credentials and settings.
    ```json
    {
-       "my_community": {
-           "displayName": "My Community",
-           "discord": {
-               "clientId": "YOUR_DISCORD_CLIENT_ID",
-               "clientSecret": "YOUR_DISCORD_CLIENT_SECRET",
-               "guildId": "YOUR_DISCORD_GUILD_ID",
-               "botToken": "YOUR_DISCORD_BOT_TOKEN",
-               "publicKey": "YOUR_DISCORD_APPLICATION_PUBLIC_KEY"
-           },
-           "xauth": {
-               "clientId": "YOUR_XAUTH_CLIENT_ID",
-               "clientSecret": "YOUR_XAUTH_CLIENT_SECRET",
-               "redirectUri": "http://localhost:3000/xauth/callback",
-               "authorizationUrl": "http://xauth-server.com/xauth/authorize",
-               "tokenUrl": "http://xauth-server.com/xauth/token",
-               "userinfoUrl": "http://xauth-server.com/xauth/user",
-               "scopes": ["profile:uuid", "profile:nickname"]
-           }
+       "displayName": "My Server Name",
+       "platformName": "XAuthConnect",
+       "discord": {
+           "clientId": "YOUR_DISCORD_CLIENT_ID",
+           "clientSecret": "YOUR_DISCORD_CLIENT_SECRET",
+           "guildId": "YOUR_DISCORD_GUILD_ID",
+           "botToken": "YOUR_DISCORD_BOT_TOKEN",
+           "publicKey": "YOUR_DISCORD_APPLICATION_PUBLIC_KEY"
        },
-       "another_community": {
-           "displayName": "Another Community",
-           "discord": {
-               "clientId": "ANOTHER_DISCORD_CLIENT_ID",
-               "clientSecret": "ANOTHER_DISCORD_CLIENT_SECRET",
-               "guildId": "ANOTHER_DISCORD_GUILD_ID",
-               "botToken": "ANOTHER_DISCORD_BOT_TOKEN",
-               "publicKey": "ANOTHER_DISCORD_APPLICATION_PUBLIC_KEY"
-           },
-           "xauth": {
-               "clientId": "ANOTHER_XAUTH_CLIENT_ID",
-               "clientSecret": "ANOTHER_XAUTH_CLIENT_SECRET",
-               "redirectUri": "http://localhost:3000/xauth/callback",
-               "authorizationUrl": "http://xauth-server.com/xauth/authorize",
-               "tokenUrl": "http://xauth-server.com/xauth/token",
-               "userinfoUrl": "http://xauth-server.com/xauth/user",
-               "scopes": ["profile:uuid", "profile:nickname"]
-           }
+       "xauth": {
+           "clientId": "YOUR_XAUTH_CLIENT_ID",
+           "clientSecret": "YOUR_XAUTH_CLIENT_SECRET",
+           "redirectUri": "http://localhost:3000/xauth/callback",
+           "authorizationUrl": "http://xauth-server.com/xauth/authorize",
+           "tokenUrl": "http://xauth-server.com/xauth/token",
+           "userinfoUrl": "http://xauth-server.com/xauth/user",
+           "scopes": ["profile:uuid", "profile:nickname"]
        }
    }
    ```
-   - **`my_community` (and `another_community`):** These are arbitrary names you choose to identify your different communities/servers.
-   - **`displayName`:** A user-friendly name for the community that will be displayed on the main page. If not provided, the community key (e.g., `my_community`) will be used.
+   - **`displayName`:** A user-friendly name for your server/application that will be displayed on the main page.
+   - **`platformName`:** The name that will be displayed in the user's Discord profile under the "Connections" section.
    - **`discord.clientId`, `discord.clientSecret`:** Obtained from your Discord Application's OAuth2 settings.
-   - **`discord.guildId`:** The ID of the Discord server (guild) associated with this community. See [How to get Guild ID](#how-to-get-guild-id).
+   - **`discord.guildId`:** The ID of the Discord server (guild) where the bot operates. Required for the `prune` command. See [How to get Guild ID](#how-to-get-guild-id).
    - **`discord.botToken`:** The token for your Discord bot. Ensure your bot has the `GUILD_MEMBERS_READ` privileged intent enabled in the Discord Developer Portal for the `prune` command to work.
    - **`discord.publicKey`:** The public key for your Discord Application, used for verifying interaction signatures. Obtain this from your Discord Application's General Information page.
    - **`xauth.*`:** Credentials and URLs for your XAuthConnect Authorization Server.
 
    **Note on Redirect URIs:**
    - The `REDIRECT_URI` in your `.env` file is the callback URL for your Discord Application's OAuth2 flow, pointing back to your bot.
-   - The `xauth.redirectUri` within each community's configuration in `config.json` is the redirect URI that your XAuthConnect Authorization Server uses to send users back to your bot after successful authentication. Ensure both are correctly configured and match their respective application settings.
+   - The `xauth.redirectUri` in `config.json` is the redirect URI that your XAuthConnect Authorization Server uses to send users back to your bot after successful authentication. Ensure both are correctly configured and match their respective application settings.
 
 ### Discord Bot Permissions and Intents
 
@@ -133,16 +113,6 @@ For the bot to function correctly, especially for features like `prune` and hand
 - `GUILD_MEMBERS_READ`: **Required for the `prune` command** to check if users are still in the guild. Without this, the `prune` command will not work correctly.
 
 Ensure these are properly configured to avoid unexpected behavior.
-
-### Discord Linked Roles and Multiple Communities
-
-Discord's Linked Roles feature is tied to a specific **Discord Application**. This means that for a single Discord Application, only **one `platform_name` and one `platform_username`** can be displayed in a user's profile.
-
-If you are managing multiple communities (e.g., different Minecraft servers like "NewLand" and "Hypixel") and a user might have a different XAuth username for each, consider the following:
-
-- **To display distinct XAuth usernames for each community:** You **must** create a separate Discord Application for each distinct community. Each entry in your `config.json` for these communities should then use the `clientId` and `clientSecret` from its own dedicated Discord Application. This will result in multiple distinct "XAuthConnect" linked roles appearing on the user's Discord profile, each showing the correct username for that specific community (e.g., one labeled "XAuthConnect" with "PlayerNewLand" and another with "PlayerHypixel").
-
-- **If using a single Discord Application for multiple communities:** The `platform_username` displayed in Discord's Linked Roles will be overwritten by the last XAuth account the user linked. For example, if a user links their "NewLand" account (username "PlayerNewLand") and then their "Hypixel" account (username "PlayerHypixel") using the *same* Discord Application, only "PlayerHypixel" will be displayed as the `platform_username`.
 
 ### How to get Guild ID
 
@@ -158,7 +128,7 @@ To get the ID of a Discord server (guild), you need to enable Developer Mode in 
 
 ## Usage
 
-After a successful installation and configuration, integrating the bot into your community workflow involves starting the bot, registering its slash commands, and utilizing the powerful command-line interface for ongoing management:
+After a successful installation and configuration, you can start the bot, register its slash commands, and use the interactive CLI for management:
 
 1. **Start the bot:**
    ```bash
@@ -171,19 +141,19 @@ After a successful installation and configuration, integrating the bot into your
    ```
    register-discord-commands
    ```
-   This will register the `/update` slash command with Discord for each configured community.
+   This will register the application's slash commands with Discord.
 
 3. **Link an account:**
-   Direct users to a URL like `http://localhost:3000/start/my_community` (replace `localhost:3000` with your bot's actual address and `my_community` with the name of your configured community). This will initiate the Discord and XAuthConnect OAuth flow.
+   Direct users to the URL `http://localhost:3000/start` (replace `localhost:3000` with your bot's actual address). This will initiate the Discord and XAuthConnect OAuth flow.
 
-4. **Use the `/update` Slash Command:**
-   Users can now type `/update` in any Discord channel where the bot is present to refresh their linked role data.
+4. **Use Slash Commands:**
+   Users can now use the registered slash commands (e.g., `/update`) in any Discord channel where the bot is present to refresh their linked role data.
 
 5. **Interactive Commands:**
    Once the bot is running, you can type commands into the console:
    - `help`: Displays a list of available commands.
    - `list`: Lists all linked users from the database.
-   - `prune`: Removes users from the database who are no longer in their respective Discord servers. Requires `guildId` and `botToken` in `config.json` and `GUILD_MEMBERS_READ` intent for the bot.
+   - `prune`: Removes users from the database who are no longer in the Discord server specified by `guildId`.
    - `refresh-all`: Refreshes the Discord linked role metadata for all users in the database.
 
 ### Exposing Your Bot to the Internet (for Discord Interactions)
