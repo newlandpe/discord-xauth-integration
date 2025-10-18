@@ -44,18 +44,16 @@ const server = createServer(async (req, res) => {
         req.on('end', async () => {
             const rawBody = Buffer.concat(body).toString();
             const interaction = JSON.parse(rawBody);
-            const clientId = interaction.application_id;
 
-            let publicKey = null;
-            for (const siteKey in config) {
-                if (config[siteKey].discord.clientId === clientId) {
-                    publicKey = config[siteKey].discord.publicKey;
-                    break;
-                }
+            if (interaction.application_id !== config.discord.clientId) {
+                error(`Interaction received for unknown application_id: ${interaction.application_id}`);
+                res.writeHead(401).end('Unauthorized');
+                return;
             }
 
+            const publicKey = config.discord.publicKey;
             if (!publicKey) {
-                error(`Public key not found for clientId: ${clientId}`);
+                error(`Public key not found in config.json`);
                 res.writeHead(401).end('Unauthorized');
                 return;
             }
@@ -233,7 +231,7 @@ rl.on('line', async (input) => {
 initializeDb().then(() => {
     server.listen(process.env.PORT, () => {
         log(`Server running at http://localhost:${process.env.PORT}`);
-        log(`Use a URL like http://localhost:${process.env.PORT}/start/my_community to begin.`);
+        log(`Use the URL http://localhost:${process.env.PORT}/start to begin.`);
         rl.prompt();
     });
 });
