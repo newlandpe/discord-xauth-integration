@@ -8,6 +8,7 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
 
 - **Discord Linked Roles Integration:** Connects user's XAuthConnect account to their Discord profile.
 - **XAuth Username Display:** Shows the XAuth username in Discord's linked roles section.
+- **Rate Limit Handling:** Implements retry mechanisms for Discord API requests to gracefully handle rate limits.
 - **Localization Support:** Discord command descriptions are localized, with support for multiple languages (e.g., English, Ukrainian). Easily extendable to other languages by adding new locale files.
 - **Database Storage:** Stores linked user data (Discord ID, XAuth ID, tokens) in a PostgreSQL database.
 - **Interactive CLI:** Manage the bot with commands directly from the console.
@@ -18,11 +19,11 @@ This project provides a Node.js bot to integrate Discord linked roles with an XA
 
 The application exposes the following routes:
 
-- `GET /`: Displays the main page of the application.
+- `GET /`: Displays the main page of the application. Can also display status messages (success, error, access denied) based on `status` query parameter (e.g., `/?status=success`).
 - `GET /start`: Initiates the account linking process. This redirects the user to Discord for authorization.
 - `POST /discord/interactions`: The endpoint for receiving Discord interactions (e.g., slash commands).
-- `GET /discord/callback`: The redirect URI for Discord OAuth2. Handles the authorization code exchange.
-- `GET /xauth/callback`: The redirect URI for XAuthConnect OAuth2. Handles the authorization code exchange and links the accounts.
+- `GET /discord/callback`: The redirect URI for Discord OAuth2. Handles the authorization code exchange and redirects to `/` with a status.
+- `GET /xauth/callback`: The redirect URI for XAuthConnect OAuth2. Handles the authorization code exchange and links the accounts, then redirects to `/` with a status.
 
 ## Installation
 
