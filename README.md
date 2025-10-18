@@ -134,14 +134,20 @@ After a successful installation and configuration, you can start the bot, regist
    ```
    The bot will start a web server and an interactive command-line interface.
 
-2. **Register Discord Commands:**
+2. **Register Application Metadata:**
+   Run the following command in the bot's CLI. This only needs to be done once.
+   ```
+   register-metadata
+   ```
+
+3. **Register Discord Commands:**
    Run the following command in the bot's CLI:
    ```
    register-discord-commands
    ```
    This will register the application's slash commands with Discord.
 
-3. **Link an account:**
+4. **Link an account:**
    Direct users to the URL `http://localhost:3000/start` (replace `localhost:3000` with your bot's actual address). This will initiate the Discord and XAuthConnect OAuth flow.
 
 4. **Use Slash Commands:**
@@ -153,6 +159,9 @@ After a successful installation and configuration, you can start the bot, regist
    - `list`: Lists all linked users from the database.
    - `prune`: Removes users from the database who are no longer in the Discord server specified by `guildId`.
    - `refresh-all`: Refreshes the Discord linked role metadata for all users in the database.
+   - `register-discord-commands`: Registers the application's slash commands with Discord.
+   - `register-metadata`: Registers the application's metadata schema with Discord.
+   - `quit`: Shuts down the bot gracefully.
 
 ### Exposing Your Bot to the Internet (for Discord Interactions)
 

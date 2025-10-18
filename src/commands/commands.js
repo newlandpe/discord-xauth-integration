@@ -198,6 +198,45 @@ const commands = {
             log('Finished Discord command registration.');
         }
     },
+    'register-metadata': {
+        description: 'Registers the application metadata schema with Discord.',
+        execute: async () => {
+            log('Registering metadata schema with Discord...');
+            const { clientId, botToken } = config.discord;
+
+            if (!clientId || !botToken) {
+                error('Missing clientId or botToken in config.json.');
+                return;
+            }
+
+            const url = `https://discord.com/api/v10/applications/${clientId}/role-connections/metadata`;
+            const body = [
+              {
+                key: 'linked',
+                name: t('METADATA_LINKED_NAME', 'en'),
+                name_localizations: getLocalizations('METADATA_LINKED_NAME'),
+                description: t('METADATA_LINKED_DESCRIPTION', 'en'),
+                description_localizations: getLocalizations('METADATA_LINKED_DESCRIPTION'),
+                type: 7, // boolean_eq
+              },
+            ];
+
+            try {
+                const response = await axios.put(url, body, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bot ${botToken}`,
+                    },
+                });
+                log('Successfully registered metadata schema!');
+                log(JSON.stringify(response.data, null, 2));
+            } catch (err) {
+                error('Error registering metadata schema:');
+                error(`[${err.response?.status}] ${err.response?.statusText}`);
+                error(err.response?.data);
+            }
+        }
+    },
     quit: {
         description: 'Shuts down the bot gracefully.',
         execute: async (commandArgs, server, db, rl) => {
