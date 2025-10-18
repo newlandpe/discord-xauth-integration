@@ -12,7 +12,7 @@ import { XAuthConnect } from './src/oauth/provider.js';
 import { db, initializeDb } from './src/db/db.js';
 import config from './config.json' with { type: 'json' };
 import { log, error } from './src/utils/logger.js';
-import { handleCommand } from './src/commands/commands.js';
+import { handleCommand, initializeCommands } from './src/commands/commands.js';
 import { graceful } from './src/utils/utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -222,7 +222,7 @@ const rl = readline.createInterface({
 });
 
 rl.on('line', async (input) => {
-    await handleCommand(input, server, db, rl, erisClient);
+    await handleCommand(input, server, db, rl);
     rl.prompt();
 });
 
@@ -235,6 +235,8 @@ initializeDb().then(() => {
             type: 0 // Playing
         });
     });
+
+    initializeCommands(erisClient);
 
     server.listen(process.env.PORT, () => {
         log(`Server running at http://localhost:${process.env.PORT}`);

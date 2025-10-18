@@ -17,267 +17,271 @@ function getLocalizations(key, defaultLang = 'en') {
     return localizations;
 }
 
-const commands = {
-    help: {
-        description: 'Displays this help message.',
-        execute: () => {
-            log('Available commands:');
-            for (const command in commands) {
-                log(`  ${command}: ${commands[command].description}`);
+let initializedCommands = {}; // To store the initialized commands
+
+function initializeCommands(erisClientInstance) {
+    initializedCommands = {
+        help: {
+            description: 'Displays this help message.',
+            execute: () => {
+                log('Available commands:');
+                for (const command in initializedCommands) {
+                    log(`  ${command}: ${initializedCommands[command].description}`);
+                }
             }
-        }
-    },
-    list: {
-        description: 'Lists all linked users from the database.',
-        execute: async () => {
-            try {
-                const { rows } = await db.query('SELECT * FROM linked_roles');
-                if (rows.length === 0) {
-                    log('No linked users found.');
+        },
+        list: {
+            description: 'Lists all linked users from the database.',
+            execute: async () => {
+                try {
+                    const { rows } = await db.query('SELECT * FROM linked_roles');
+                    if (rows.length === 0) {
+                        log('No linked users found.');
+                        return;
+                    }
+
+                    log('Linked users:');
+                    rows.forEach(row => {
+                        log(`  - Discord ID: ${row.discord_id}, XAuth Username: ${row.xauth_username}`);
+                    });
+                } catch (err) {
+                    error(`Error fetching linked users: ${err}`);
+                }
+            }
+        },
+        prune: {
+            description: 'Removes users from the database who are no longer in the Discord server.',
+            execute: async () => {
+                log('Starting prune...');
+
+                if (!config.discord.guildId || !config.discord.botToken) {
+                    error('Prune failed: Missing guildId or botToken in config.json');
                     return;
                 }
 
-                log('Linked users:');
-                rows.forEach(row => {
-                    log(`  - Discord ID: ${row.discord_id}, XAuth Username: ${row.xauth_username}`);
-                });
-            } catch (err) {
-                error(`Error fetching linked users: ${err}`);
-            }
-        }
-    },
-    prune: {
-        description: 'Removes users from the database who are no longer in the Discord server.',
-        execute: async () => {
-            log('Starting prune...');
+                try {
+                    const { rows } = await db.query('SELECT * FROM linked_roles');
+                    if (rows.length === 0) {
+                        log('No linked users found to prune.');
+                        return;
+                    }
 
-            if (!config.discord.guildId || !config.discord.botToken) {
-                error('Prune failed: Missing guildId or botToken in config.json');
-                return;
-            }
+                    for (const row of rows) {
+                        const { discord_id } = row;
+                        const url = `https://discord.com/api/v10/guilds/${config.discord.guildId}/members/${discord_id}`;
 
-            try {
-                const { rows } = await db.query('SELECT * FROM linked_roles');
-                if (rows.length === 0) {
-                    log('No linked users found to prune.');
-                    return;
-                }
-
-                for (const row of rows) {
-                    const { discord_id } = row;
-                    const url = `https://discord.com/api/v10/guilds/${config.discord.guildId}/members/${discord_id}`;
-
-                    try {
-                        await axios.get(url, {
-                            headers: {
-                                'Authorization': `Bot ${config.discord.botToken}`
+                        try {
+                            await axios.get(url, {
+                                headers: {
+                                    'Authorization': `Bot ${config.discord.botToken}`
+                                }
+                            });
+                        } catch (err) {
+                            if (err.response && err.response.status === 404) {
+                                // The user was not found in the guild, so remove them from the database.
+                                log(`User ${discord_id} not found in guild. Removing from database.`);
+                                await db.query('DELETE FROM linked_roles WHERE discord_id = $1', [discord_id]);
+                            } else {
+                                error(`Error checking user ${discord_id}: ${err.message}`);
                             }
-                        });
-                    } catch (err) {
-                        if (err.response && err.response.status === 404) {
-                            // The user was not found in the guild, so remove them from the database.
-                            log(`User ${discord_id} not found in guild. Removing from database.`);
-                            await db.query('DELETE FROM linked_roles WHERE discord_id = $1', [discord_id]);
-                        } else {
-                            error(`Error checking user ${discord_id}: ${err.message}`);
                         }
                     }
+                    log('Prune finished.');
+                } catch (err) {
+                    error(`Error during prune: ${err}`);
                 }
-                log('Prune finished.');
-            } catch (err) {
-                error(`Error during prune: ${err}`);
             }
-        }
-    },
-    'refresh-all': {
-        description: 'Refreshes metadata for all linked users.',
-        execute: async () => {
-            log('Starting refresh-all...');
-            try {
-                const { rows } = await db.query('SELECT * FROM linked_roles');
-                if (rows.length === 0) {
-                    log('No linked users found to refresh.');
+        },
+        'refresh-all': {
+            description: 'Refreshes metadata for all linked users.',
+            execute: async () => {
+                log('Starting refresh-all...');
+                try {
+                    const { rows } = await db.query('SELECT * FROM linked_roles');
+                    if (rows.length === 0) {
+                        log('No linked users found to refresh.');
+                        return;
+                    }
+
+                    for (const row of rows) {
+                        const { discord_id, xauth_username } = row;
+                        const newAccessToken = await refreshToken(discord_id);
+
+                        if (newAccessToken) {
+                            await updateDiscordMetadata(newAccessToken, xauth_username, { linked: 1 });
+                        } else {
+                            error(`Skipping metadata update for ${discord_id} due to token refresh failure.`);
+                        }
+                    }
+                    log('Refresh-all finished.');
+                } catch (err) {
+                    error(`Error during refresh-all: ${err}`);
+                }
+            }
+        },
+        'register-discord-commands': {
+            description: 'Registers Discord global slash commands.',
+            execute: async () => {
+                log('Registering Discord global slash commands...');
+
+                const clientId = config.discord.clientId;
+                const botToken = config.discord.botToken;
+
+                if (!clientId || !botToken) {
+                    error('Missing clientId or botToken in config.json.');
                     return;
                 }
 
-                for (const row of rows) {
-                    const { discord_id, xauth_username } = row;
-                    const newAccessToken = await refreshToken(discord_id);
-
-                    if (newAccessToken) {
-                        await updateDiscordMetadata(newAccessToken, xauth_username, { linked: 1 });
-                    } else {
-                        error(`Skipping metadata update for ${discord_id} due to token refresh failure.`);
-                    }
-                }
-                log('Refresh-all finished.');
-            } catch (err) {
-                error(`Error during refresh-all: ${err}`);
-            }
-        }
-    },
-    'register-discord-commands': {
-        description: 'Registers Discord global slash commands.',
-        execute: async () => {
-            log('Registering Discord global slash commands...');
-
-            const clientId = config.discord.clientId;
-            const botToken = config.discord.botToken;
-
-            if (!clientId || !botToken) {
-                error('Missing clientId or botToken in config.json.');
-                return;
-            }
-
-            const commands = [
-                {
-                    name: 'update',
-                    description: t('COMMAND_UPDATE_DESCRIPTION', 'en'),
-                    description_localizations: getLocalizations('COMMAND_UPDATE_DESCRIPTION'),
-                    type: 1 // CHAT_INPUT
-                },
-                {
-                    name: 'ping',
-                    description: t('COMMAND_PING_DESCRIPTION', 'en'),
-                    description_localizations: getLocalizations('COMMAND_PING_DESCRIPTION'),
-                    type: 1 // CHAT_INPUT
-                },
-                {
-                    name: 'whois',
-                    description: t('COMMAND_WHOIS_DESCRIPTION', 'en'),
-                    description_localizations: getLocalizations('COMMAND_WHOIS_DESCRIPTION'),
-                    type: 1, // CHAT_INPUT
-                    options: [
-                        {
-                            name: 'user',
-                            description: t('COMMAND_WHOIS_OPTION_USER_DESCRIPTION', 'en'),
-                            description_localizations: getLocalizations('COMMAND_WHOIS_OPTION_USER_DESCRIPTION'),
-                            type: 6, // USER type
-                            required: false
-                        }
-                    ]
-                },
-                {
-                    name: 'myinfo',
-                    description: t('COMMAND_MYINFO_DESCRIPTION', 'en'),
-                    description_localizations: getLocalizations('COMMAND_MYINFO_DESCRIPTION'),
-                    type: 1 // CHAT_INPUT
-                },
-                {
-                    name: 'refresh',
-                    description: t('COMMAND_REFRESH_DESCRIPTION', 'en'),
-                    description_localizations: getLocalizations('COMMAND_REFRESH_DESCRIPTION'),
-                    type: 1, // CHAT_INPUT
-                    options: [
-                        {
-                            name: 'user',
-                            description: t('COMMAND_REFRESH_OPTION_USER_DESCRIPTION', 'en'),
-                            description_localizations: getLocalizations('COMMAND_REFRESH_OPTION_USER_DESCRIPTION'),
-                            type: 6, // USER type
-                            required: true
-                        }
-                    ]
-                }
-            ];
-
-            try {
-                await axios.put(
-                    `https://discord.com/api/v10/applications/${clientId}/commands`,
-                    commands,
+                const commands = [
                     {
-                        headers: {
-                            'Authorization': `Bot ${botToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                );
-                log(`Successfully registered commands.`);
-            } catch (err) {
-                error(`Error registering commands: ${err.response?.data?.message || err.message}`);
-            }
-            log('Finished Discord command registration.');
-        }
-    },
-    'register-metadata': {
-        description: 'Registers the application metadata schema with Discord.',
-        execute: async () => {
-            log('Registering metadata schema with Discord...');
-            const { clientId, botToken } = config.discord;
-
-            if (!clientId || !botToken) {
-                error('Missing clientId or botToken in config.json.');
-                return;
-            }
-
-            const url = `https://discord.com/api/v10/applications/${clientId}/role-connections/metadata`;
-            const body = [
-              {
-                key: 'linked',
-                name: t('METADATA_LINKED_NAME', 'en'),
-                name_localizations: getLocalizations('METADATA_LINKED_NAME'),
-                description: t('METADATA_LINKED_DESCRIPTION', 'en'),
-                description_localizations: getLocalizations('METADATA_LINKED_DESCRIPTION'),
-                type: 7, // boolean_eq
-              },
-            ];
-
-            try {
-                const response = await axios.put(url, body, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bot ${botToken}`,
+                        name: 'update',
+                        description: t('COMMAND_UPDATE_DESCRIPTION', 'en'),
+                        description_localizations: getLocalizations('COMMAND_UPDATE_DESCRIPTION'),
+                        type: 1 // CHAT_INPUT
                     },
-                });
-                log('Successfully registered metadata schema!');
-                log(JSON.stringify(response.data, null, 2));
-            } catch (err) {
-                error('Error registering metadata schema:');
-                error(`[${err.response?.status}] ${err.response?.statusText}`);
-                error(err.response?.data);
+                    {
+                        name: 'ping',
+                        description: t('COMMAND_PING_DESCRIPTION', 'en'),
+                        description_localizations: getLocalizations('COMMAND_PING_DESCRIPTION'),
+                        type: 1 // CHAT_INPUT
+                    },
+                    {
+                        name: 'whois',
+                        description: t('COMMAND_WHOIS_DESCRIPTION', 'en'),
+                        description_localizations: getLocalizations('COMMAND_WHOIS_DESCRIPTION'),
+                        type: 1, // CHAT_INPUT
+                        options: [
+                            {
+                                name: 'user',
+                                description: t('COMMAND_WHOIS_OPTION_USER_DESCRIPTION', 'en'),
+                                description_localizations: getLocalizations('COMMAND_WHOIS_OPTION_USER_DESCRIPTION'),
+                                type: 6, // USER type
+                                required: false
+                            }
+                        ]
+                    },
+                    {
+                        name: 'myinfo',
+                        description: t('COMMAND_MYINFO_DESCRIPTION', 'en'),
+                        description_localizations: getLocalizations('COMMAND_MYINFO_DESCRIPTION'),
+                        type: 1 // CHAT_INPUT
+                    },
+                    {
+                        name: 'refresh',
+                        description: t('COMMAND_REFRESH_DESCRIPTION', 'en'),
+                        description_localizations: getLocalizations('COMMAND_REFRESH_DESCRIPTION'),
+                        type: 1, // CHAT_INPUT
+                        options: [
+                            {
+                                name: 'user',
+                                description: t('COMMAND_REFRESH_OPTION_USER_DESCRIPTION', 'en'),
+                                description_localizations: getLocalizations('COMMAND_REFRESH_OPTION_USER_DESCRIPTION'),
+                                type: 6, // USER type
+                                required: true
+                            }
+                        ]
+                    }
+                ];
+
+                try {
+                    await axios.put(
+                        `https://discord.com/api/v10/applications/${clientId}/commands`,
+                        commands,
+                        {
+                            headers: {
+                                'Authorization': `Bot ${botToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    log(`Successfully registered commands.`);
+                } catch (err) {
+                    error(`Error registering commands: ${err.response?.data?.message || err.message}`);
+                }
+                log('Finished Discord command registration.');
+            }
+        },
+        'register-metadata': {
+            description: 'Registers the application metadata schema with Discord.',
+            execute: async () => {
+                log('Registering metadata schema with Discord...');
+                const { clientId, botToken } = config.discord;
+
+                if (!clientId || !botToken) {
+                    error('Missing clientId or botToken in config.json.');
+                    return;
+                }
+
+                const url = `https://discord.com/api/v10/applications/${clientId}/role-connections/metadata`;
+                const body = [
+                  {
+                    key: 'linked',
+                    name: t('METADATA_LINKED_NAME', 'en'),
+                    name_localizations: getLocalizations('METADATA_LINKED_NAME'),
+                    description: t('METADATA_LINKED_DESCRIPTION', 'en'),
+                    description_localizations: getLocalizations('METADATA_LINKED_DESCRIPTION'),
+                    type: 7, // boolean_eq
+                  },
+                ];
+
+                try {
+                    const response = await axios.put(url, body, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bot ${botToken}`,
+                        },
+                    });
+                    log('Successfully registered metadata schema!');
+                    log(JSON.stringify(response.data, null, 2));
+                } catch (err) {
+                    error('Error registering metadata schema:');
+                    error(`[${err.response?.status}] ${err.response?.statusText}`);
+                    error(err.response?.data);
+                }
+            }
+        },
+        'set-presence': {
+            description: 'Sets the bot\'s presence. Usage: set-presence <name> <type> <status>',
+            execute: async (commandArgs, server, db, rl) => {
+                const [name, typeStr, status] = commandArgs;
+                if (!name || !typeStr || !status) {
+                    log('Usage: set-presence <name> <type> <status>');
+                    log('  <name>: Activity name (e.g., "Playing a game")');
+                    log('  <type>: Activity type (0=Playing, 1=Streaming, 2=Listening, 3=Watching, 5=Competing)');
+                    log('  <status>: Bot status ("online", "idle", "dnd", "offline")');
+                    return;
+                }
+
+                const type = parseInt(typeStr, 10);
+                if (isNaN(type) || ![0, 1, 2, 3, 5].includes(type)) {
+                    log('Invalid activity type. Must be 0, 1, 2, 3, or 5.');
+                    return;
+                }
+
+                if (!['online', 'idle', 'dnd', 'offline'].includes(status)) {
+                    log('Invalid status. Must be "online", "idle", "dnd", or "offline".');
+                    return;
+                }
+
+                try {
+                    await erisClientInstance.editStatus(status, { name, type });
+                    log(`Bot presence set to: ${name} (Type: ${type}, Status: ${status})`);
+                } catch (err) {
+                    error(`Error setting bot presence: ${err.message}`);
+                }
+            }
+        },
+        quit: {
+            description: 'Shuts down the bot gracefully.',
+            execute: async (commandArgs, server, db, rl) => {
+                await graceful('quit', server, db, rl);
             }
         }
-    },
-    'set-presence': {
-        description: 'Sets the bot\'s presence. Usage: set-presence <name> <type> <status>',
-        execute: async (commandArgs, server, db, rl, erisClient) => {
-            const [name, typeStr, status] = commandArgs;
-            if (!name || !typeStr || !status) {
-                log('Usage: set-presence <name> <type> <status>');
-                log('  <name>: Activity name (e.g., "Playing a game")');
-                log('  <type>: Activity type (0=Playing, 1=Streaming, 2=Listening, 3=Watching, 5=Competing)');
-                log('  <status>: Bot status ("online", "idle", "dnd", "offline")');
-                return;
-            }
 
-            const type = parseInt(typeStr, 10);
-            if (isNaN(type) || ![0, 1, 2, 3, 5].includes(type)) {
-                log('Invalid activity type. Must be 0, 1, 2, 3, or 5.');
-                return;
-            }
+    };
+}
 
-            if (!['online', 'idle', 'dnd', 'offline'].includes(status)) {
-                log('Invalid status. Must be "online", "idle", "dnd", or "offline".');
-                return;
-            }
-
-            try {
-                await erisClient.editStatus(status, { name, type });
-                log(`Bot presence set to: ${name} (Type: ${type}, Status: ${status})`);
-            } catch (err) {
-                error(`Error setting bot presence: ${err.message}`);
-            }
-        }
-    },
-    quit: {
-        description: 'Shuts down the bot gracefully.',
-        execute: async (commandArgs, server, db, rl) => {
-            await graceful('quit', server, db, rl);
-        }
-    },
-
-};
-
-async function handleCommand(command, server, db, rl, erisClient) {
+async function handleCommand(command, server, db, rl) {
     const trimmedCommand = command.trim();
     if (!trimmedCommand) {
         return;
@@ -285,11 +289,11 @@ async function handleCommand(command, server, db, rl, erisClient) {
 
     const [commandName, ...args] = trimmedCommand.split(' ');
 
-    if (commands[commandName]) {
-        await commands[commandName].execute(args, server, db, rl);
+    if (initializedCommands[commandName]) {
+        await initializedCommands[commandName].execute(args, server, db, rl);
     } else {
         log(`Unknown command: ${commandName}. Type 'help' for a list of commands.`);
     }
 }
 
-export { handleCommand };
+export { handleCommand, initializeCommands };
