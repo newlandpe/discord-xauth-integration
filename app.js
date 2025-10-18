@@ -25,8 +25,9 @@ async function getHtml(fileName) {
 }
 
 const server = createServer(async (req, res) => {
-    const url = new URL(req.url, process.env.REDIRECT_URI);
+    const url = new URL(req.url, `http://${req.headers.host}`);
 
+    // Interaction endpoint
     if (req.method === 'POST' && url.pathname === '/discord/interactions') {
         const signature = req.headers['x-signature-ed25519'];
         const timestamp = req.headers['x-signature-timestamp'];
@@ -72,7 +73,6 @@ const server = createServer(async (req, res) => {
                 }
 
                 const interactionResponse = await handleDiscordInteraction(interaction);
-
                 res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(interactionResponse));
 
             } catch (err) {
@@ -83,122 +83,10 @@ const server = createServer(async (req, res) => {
         return;
     }
 
-    if (url.pathname === '/discord/callback') {
-        const code = url.searchParams.get('code');
-        const state = url.searchParams.get('state');
-        const errorParam = url.searchParams.get('error');
-
-        if (errorParam === 'access_denied') {
-            const deniedHtml = await getHtml('access_denied.html');
-            res.writeHead(200, {'Content-Type': 'text/html'}).end(deniedHtml);
-            return;
-        }
-
-        if (!code || !state || !stateCache.has(state)) {
-            res.writeHead(400).end('Invalid request or state expired.');
-            return;
-        }
-        stateCache.delete(state); // State used, delete it
-
-        try {
-            const tokenResponse = await discordOauth.tokenRequest({
-                clientId: config.discord.clientId,
-                clientSecret: config.discord.clientSecret,
-                grantType: 'authorization_code',
-                code: code,
-                scope: ['identify', 'role_connections.write'],
-                redirectUri: process.env.REDIRECT_URI,
-            });
-
-            const user = await discordOauth.getUser(tokenResponse.access_token);
-
-            const xauthState = randomBytes(16).toString('hex');
-            const code_verifier = randomBytes(32).toString('hex');
-
-            tokenCache.set(xauthState, {
-                discordToken: tokenResponse.access_token,
-                discordRefreshToken: tokenResponse.refresh_token,
-                discordUser: user,
-                code_verifier: code_verifier
-            });
-
-            const authUrl = xauthProvider.getAuthorizationUrl({ state: xauthState, code_verifier });
-            res.writeHead(302, { Location: authUrl }).end();
-
-        } catch (err) {
-            error(`Error during Discord OAuth: ${err}`);
-            const errorHtml = await getHtml('error.html');
-            const errorMessage = `Error: ${err.message}\n\nStack: ${err.stack}`;
-            res.writeHead(500, {'Content-Type': 'text/html'}).end(errorHtml.replace('{{errorMessage}}', errorMessage));
-        }
-        return;
-    }
-
-    if (url.pathname === '/xauth/callback') {
-        const code = url.searchParams.get('code');
-        const state = url.searchParams.get('state');
-        const errorParam = url.searchParams.get('error');
-
-        if (errorParam === 'access_denied') {
-            const deniedHtml = await getHtml('access_denied.html');
-            res.writeHead(200, {'Content-Type': 'text/html'}).end(deniedHtml);
-            return;
-        }
-
-        if (!code || !state || !tokenCache.has(state)) {
-            res.writeHead(400).end('Invalid request or state expired.');
-            return;
-        }
-
-        const { code_verifier, discordToken, discordUser, discordRefreshToken } = tokenCache.get(state);
-
-        try {
-            const xauthToken = await xauthProvider.getAccessToken({ code, code_verifier });
-            const xauthUser = await xauthProvider.getResourceOwner(xauthToken);
-
-            tokenCache.delete(state);
-
-            log('Successfully linked accounts!');
-            log(`Discord User: ${discordUser.username} (${discordUser.id})`);
-            log(`XAuth User: ${xauthUser.getNickname()} (${xauthUser.getId()})`);
-
-            await updateDiscordMetadata(discordToken, xauthUser.getNickname(), { linked: 1 });
-
-            const upsertQuery = `
-                INSERT INTO linked_roles (discord_id, xauth_id, xauth_username, discord_access_token, discord_refresh_token)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (discord_id)
-                DO UPDATE SET
-                    xauth_id = EXCLUDED.xauth_id,
-                    xauth_username = EXCLUDED.xauth_username,
-                    discord_access_token = EXCLUDED.discord_access_token,
-                    discord_refresh_token = EXCLUDED.discord_refresh_token;
-            `;
-            await db.query(upsertQuery, [
-                discordUser.id,
-                xauthUser.getId(),
-                xauthUser.getNickname(),
-                discordToken,
-                discordRefreshToken,
-            ]);
-            log('Saved linked account to the database.');
-
-            const successHtml = await getHtml('success.html');
-            res.writeHead(200, {'Content-Type': 'text/html'}).end(successHtml);
-
-        } catch (err) {
-            error(`Error during XAuthConnect OAuth: ${err}`);
-            const errorHtml = await getHtml('error.html');
-            const errorMessage = `Error: ${err.message}\n\nStack: ${err.stack}\n\n${err.response ? `Response Body: ${JSON.stringify(err.response.data, null, 2)}` : ''}`.trim();
-            res.writeHead(500, {'Content-Type': 'text/html'}).end(errorHtml.replace('{{errorMessage}}', errorMessage));
-        }
-        return;
-    }
-
+    // Start OAuth flow
     if (url.pathname === '/start') {
         const state = randomBytes(16).toString('hex');
         stateCache.add(state);
-
         const authUrl = discordOauth.generateAuthUrl({
             clientId: config.discord.clientId,
             scope: ['identify', 'role_connections.write'],
@@ -210,11 +98,106 @@ const server = createServer(async (req, res) => {
         return;
     }
 
-    const indexHtml = await getHtml('index.html');
-    const linkButton = `<a href="/start" class="btn btn-primary m-2">Link Account</a>`;
+    // Discord callback
+    if (url.pathname === '/discord/callback') {
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+        if (url.searchParams.get('error') === 'access_denied') {
+            res.writeHead(302, { Location: '/access_denied' }).end();
+            return;
+        }
+        if (!code || !state || !stateCache.has(state)) {
+            res.writeHead(302, { Location: '/error' }).end();
+            return;
+        }
+        stateCache.delete(state);
 
-    const renderedHtml = indexHtml.replace('{{link_button}}', linkButton);
-    res.writeHead(200, {'Content-Type': 'text/html'}).end(renderedHtml);
+        try {
+            const tokenResponse = await discordOauth.tokenRequest({
+                clientId: config.discord.clientId,
+                clientSecret: config.discord.clientSecret,
+                grantType: 'authorization_code',
+                code,
+                scope: ['identify', 'role_connections.write'],
+                redirectUri: process.env.REDIRECT_URI,
+            });
+            const user = await discordOauth.getUser(tokenResponse.access_token);
+            const xauthState = randomBytes(16).toString('hex');
+            const code_verifier = randomBytes(32).toString('hex');
+            tokenCache.set(xauthState, {
+                discordToken: tokenResponse.access_token,
+                discordRefreshToken: tokenResponse.refresh_token,
+                discordUser: user,
+                code_verifier,
+            });
+            const authUrl = xauthProvider.getAuthorizationUrl({ state: xauthState, code_verifier });
+            res.writeHead(302, { Location: authUrl }).end();
+        } catch (err) {
+            error(`Error during Discord OAuth: ${err}`);
+            res.writeHead(302, { Location: '/error' }).end();
+        }
+        return;
+    }
+
+    // XAuthConnect callback
+    if (url.pathname === '/xauth/callback') {
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+        if (url.searchParams.get('error') === 'access_denied') {
+            res.writeHead(302, { Location: '/access_denied' }).end();
+            return;
+        }
+        if (!code || !state || !tokenCache.has(state)) {
+            res.writeHead(302, { Location: '/error' }).end();
+            return;
+        }
+        const { code_verifier, discordToken, discordUser, discordRefreshToken } = tokenCache.get(state);
+        tokenCache.delete(state);
+
+        try {
+            const xauthToken = await xauthProvider.getAccessToken({ code, code_verifier });
+            const xauthUser = await xauthProvider.getResourceOwner(xauthToken);
+            log('Successfully linked accounts!');
+            log(`Discord User: ${discordUser.username} (${discordUser.id})`);
+            log(`XAuth User: ${xauthUser.getNickname()} (${xauthUser.getId()})`);
+            await updateDiscordMetadata(discordToken, xauthUser.getNickname(), { linked: 1 });
+            const upsertQuery = `
+                INSERT INTO linked_roles (discord_id, xauth_id, xauth_username, discord_access_token, discord_refresh_token)
+                VALUES ($1, $2, $3, $4, $5) ON CONFLICT (discord_id) DO UPDATE SET
+                    xauth_id = EXCLUDED.xauth_id, xauth_username = EXCLUDED.xauth_username,
+                    discord_access_token = EXCLUDED.discord_access_token, discord_refresh_token = EXCLUDED.discord_refresh_token;`;
+            await db.query(upsertQuery, [discordUser.id, xauthUser.getId(), xauthUser.getNickname(), discordToken, discordRefreshToken]);
+            log('Saved linked account to the database.');
+            res.writeHead(302, { Location: '/success' }).end();
+        } catch (err) {
+            error(`Error during XAuthConnect OAuth: ${err}`);
+            res.writeHead(302, { Location: '/error' }).end();
+        }
+        return;
+    }
+
+    // Static result pages
+    if (url.pathname === '/success') {
+        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('success.html'));
+        return;
+    }
+    if (url.pathname === '/access_denied') {
+        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('access_denied.html'));
+        return;
+    }
+    if (url.pathname === '/error') {
+        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('error.html'));
+        return;
+    }
+
+    // Index page
+    if (url.pathname === '/') {
+        res.writeHead(200, {'Content-Type': 'text/html'}).end(await getHtml('index.html'));
+        return;
+    }
+
+    // Fallback for any other route
+    res.writeHead(404).end('Not Found');
 });
 
 const rl = readline.createInterface({
