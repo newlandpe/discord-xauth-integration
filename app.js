@@ -106,6 +106,7 @@ const server = createServer(async (req, res) => {
             res.writeHead(302, { Location: '/?status=access_denied' }).end();
             return;
         }
+        if (!code || !state || !stateCache.has(state)) {
             res.writeHead(302, { Location: '/?status=error' }).end();
             return;
         }
