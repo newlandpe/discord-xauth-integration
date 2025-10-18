@@ -16,7 +16,9 @@ import { graceful } from './src/utils/utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const tokenCache = new Map();
+const stateCache = new Set();
 const discordOauth = new OAuth();
+const xauthProvider = new XAuthConnect(config.xauth);
 
 async function getHtml(fileName) {
     return await readFile(path.join(__dirname, 'views', fileName), 'utf-8');
@@ -94,15 +96,16 @@ const server = createServer(async (req, res) => {
             return;
         }
 
-        if (!code || !state || !config[state]) {
-            res.writeHead(400).end('Invalid request');
+        if (!code || !state || !stateCache.has(state)) {
+            res.writeHead(400).end('Invalid request or state expired.');
             return;
         }
+        stateCache.delete(state); // State used, delete it
 
         try {
             const tokenResponse = await discordOauth.tokenRequest({
-                clientId: config[state].discord.clientId,
-                clientSecret: config[state].discord.clientSecret,
+                clientId: config.discord.clientId,
+                clientSecret: config.discord.clientSecret,
                 grantType: 'authorization_code',
                 code: code,
                 scope: ['identify', 'role_connections.write'],
@@ -111,7 +114,6 @@ const server = createServer(async (req, res) => {
 
             const user = await discordOauth.getUser(tokenResponse.access_token);
 
-            const xauthProvider = new XAuthConnect(config[state].xauth);
             const xauthState = randomBytes(16).toString('hex');
             const code_verifier = randomBytes(32).toString('hex');
 
@@ -119,7 +121,6 @@ const server = createServer(async (req, res) => {
                 discordToken: tokenResponse.access_token,
                 discordRefreshToken: tokenResponse.refresh_token,
                 discordUser: user,
-                site: state,
                 code_verifier: code_verifier
             });
 
@@ -151,26 +152,24 @@ const server = createServer(async (req, res) => {
             return;
         }
 
-        const { site, code_verifier } = tokenCache.get(state);
-        const xauthProvider = new XAuthConnect(config[site].xauth);
+        const { code_verifier, discordToken, discordUser, discordRefreshToken } = tokenCache.get(state);
 
         try {
             const xauthToken = await xauthProvider.getAccessToken({ code, code_verifier });
             const xauthUser = await xauthProvider.getResourceOwner(xauthToken);
 
-            const { discordToken, discordUser, discordRefreshToken } = tokenCache.get(state);
             tokenCache.delete(state);
 
             log('Successfully linked accounts!');
             log(`Discord User: ${discordUser.username} (${discordUser.id})`);
             log(`XAuth User: ${xauthUser.getNickname()} (${xauthUser.getId()})`);
 
-            await updateDiscordMetadata(config[site].discord.clientId, discordToken, xauthUser.getNickname());
+            await updateDiscordMetadata(discordToken, xauthUser.getNickname(), { linked: 1 });
 
             const upsertQuery = `
-                INSERT INTO linked_roles (discord_id, site, xauth_id, xauth_username, discord_access_token, discord_refresh_token)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (discord_id, site)
+                INSERT INTO linked_roles (discord_id, xauth_id, xauth_username, discord_access_token, discord_refresh_token)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (discord_id)
                 DO UPDATE SET
                     xauth_id = EXCLUDED.xauth_id,
                     xauth_username = EXCLUDED.xauth_username,
@@ -179,7 +178,6 @@ const server = createServer(async (req, res) => {
             `;
             await db.query(upsertQuery, [
                 discordUser.id,
-                site,
                 xauthUser.getId(),
                 xauthUser.getNickname(),
                 discordToken,
@@ -199,29 +197,23 @@ const server = createServer(async (req, res) => {
         return;
     }
 
-    if (url.pathname.startsWith('/start/')) {
-        const site = url.pathname.split('/')[2];
-        if (!config[site]) {
-            res.writeHead(404).end('Configuration not found.');
-            return;
-        }
+    if (url.pathname === '/start') {
+        const state = randomBytes(16).toString('hex');
+        stateCache.add(state);
 
         const authUrl = discordOauth.generateAuthUrl({
-            clientId: config[site].discord.clientId,
+            clientId: config.discord.clientId,
             scope: ['identify', 'role_connections.write'],
             redirectUri: process.env.REDIRECT_URI,
             responseType: 'code',
-            state: site,
+            state: state,
         });
         res.writeHead(302, { Location: authUrl }).end();
         return;
     }
 
     const indexHtml = await getHtml('index.html');
-    const communityLinks = Object.keys(config).map(site => {
-        const displayName = config[site].displayName || site;
-        return `<a href="/start/${site}" class="btn btn-primary m-2">${displayName}</a>`;
-    }).join('');
+    const communityLinks = `<a href="/start" class="btn btn-primary m-2">${config.displayName || 'Link Account'}</a>`;
 
     const renderedHtml = indexHtml.replace('{{community_links}}', communityLinks);
     res.writeHead(200, {'Content-Type': 'text/html'}).end(renderedHtml);

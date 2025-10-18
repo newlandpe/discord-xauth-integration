@@ -18,5 +18,7 @@
   "COMMAND_WHOIS_OPTION_USER_DESCRIPTION": "The Discord user to check.",
   "COMMAND_MYINFO_DESCRIPTION": "Shows your linked XAuth username.",
   "COMMAND_REFRESH_DESCRIPTION": "Manually refreshes the linked role metadata for a specific Discord user.",
-  "COMMAND_REFRESH_OPTION_USER_DESCRIPTION": "The Discord user whose data to refresh."
+  "COMMAND_REFRESH_OPTION_USER_DESCRIPTION": "The Discord user whose data to refresh.",
+  "METADATA_LINKED_NAME": "Account Linked",
+  "METADATA_LINKED_DESCRIPTION": "Whether the user has successfully linked their account to XAuthConnect."
 }

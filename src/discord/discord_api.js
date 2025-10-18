@@ -7,14 +7,12 @@ import { t } from '../utils/i18n.js';
 
 const discordOauth = new OAuth();
 
-export async function updateDiscordMetadata(clientId, accessToken, xauthUsername) {
-    const url = `https://discord.com/api/v10/users/@me/applications/${clientId}/role-connection`;
+export async function updateDiscordMetadata(accessToken, xauthUsername, metadata) {
+    const url = `https://discord.com/api/v10/users/@me/applications/${config.discord.clientId}/role-connection`;
     const body = {
-        platform_name: 'XAuthConnect',
+        platform_name: config.platformName,
         platform_username: xauthUsername,
-        metadata: {
-            linked: 1,
-        }
+        metadata: metadata,
     };
 
     try {
@@ -31,38 +29,33 @@ export async function updateDiscordMetadata(clientId, accessToken, xauthUsername
     }
 }
 
-export async function refreshToken(discord_id, site) {
-    const { rows } = await db.query('SELECT discord_refresh_token FROM linked_roles WHERE discord_id = $1 AND site = $2', [discord_id, site]);
+export async function refreshToken(discord_id) {
+    const { rows } = await db.query('SELECT discord_refresh_token FROM linked_roles WHERE discord_id = $1', [discord_id]);
     if (!rows.length) {
         throw new Error('No record found for this user.');
-    }
-
-    const communityConfig = config[site];
-    if (!communityConfig) {
-        throw new Error(`Configuration for site '${site}' not found.`);
     }
 
     try {
         const tokenResponse = await discordOauth.tokenRequest({
             grantType: 'refresh_token',
             refreshToken: rows[0].discord_refresh_token,
-            clientId: communityConfig.discord.clientId,
-            clientSecret: communityConfig.discord.clientSecret,
+            clientId: config.discord.clientId,
+            clientSecret: config.discord.clientSecret,
             scope: ['identify', 'role_connections.write'],
         });
 
         await db.query(
-            'UPDATE linked_roles SET discord_access_token = $1, discord_refresh_token = $2 WHERE discord_id = $3 AND site = $4',
-            [tokenResponse.access_token, tokenResponse.refresh_token, discord_id, site]
+            'UPDATE linked_roles SET discord_access_token = $1, discord_refresh_token = $2 WHERE discord_id = $3',
+            [tokenResponse.access_token, tokenResponse.refresh_token, discord_id]
         );
 
-        log(`Refreshed token for ${discord_id} on site ${site}.`);
+        log(`Refreshed token for ${discord_id}.`);
         return tokenResponse.access_token;
     } catch (err) {
-        error(`Error refreshing token for ${discord_id} on site ${site}: ${err.message}`);
+        error(`Error refreshing token for ${discord_id}: ${err.message}`);
         if (err.message.includes('invalid_grant')) {
-            log(`Removing invalid link for ${discord_id} on site ${site}.`);
-            await db.query('DELETE FROM linked_roles WHERE discord_id = $1 AND site = $2', [discord_id, site]);
+            log(`Removing invalid link for ${discord_id}.`);
+            await db.query('DELETE FROM linked_roles WHERE discord_id = $1', [discord_id]);
         }
         return null;
     }
@@ -95,58 +88,41 @@ export async function handleDiscordInteraction(interaction) {
         case INTERACTION_TYPE.APPLICATION_COMMAND:
             const commandName = interaction.data.name;
             const userId = interaction.member?.user?.id || interaction.user?.id;
-            const clientId = interaction.application_id; // The application ID from the interaction
 
-            // Find the site associated with this clientId
-            let site = null;
-            for (const s in config) {
-                if (config[s].discord.clientId === clientId) {
-                    site = s;
-                    break;
-                }
+            // In a single-community setup, we don't need to find the site.
+            // We assume all interactions are for the single configured bot.
+            if (interaction.application_id !== config.discord.clientId) {
+                error(`Interaction received for unknown application_id: ${interaction.application_id}`);
+                return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: t('CONFIGURATION_ERROR_SITE_NOT_FOUND', lang), flags: 64 } };
             }
 
             const lang = interaction.locale?.split('-')[0] || 'en'; // Get language from locale, default to en
-
-            if (!site) {
-                error(`Could not find site configuration for clientId: ${clientId}`);
-                return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: t('CONFIGURATION_ERROR_SITE_NOT_FOUND', lang), flags: 64 } };
-            }
 
             switch (commandName) {
                 case 'update':
                     // Defer the response immediately
                     const followUp = async () => {
-                        const { rows } = await db.query('SELECT discord_access_token, xauth_username FROM linked_roles WHERE discord_id = $1 AND site = $2', [userId, site]);
+                        const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1 AND site = $2', [userId, 'default']);
                         if (!rows.length) {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
+                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('NO_LINKED_ACCOUNT', lang),
                                 flags: 64
                             });
                             return;
                         }
 
-                        const { discord_access_token, xauth_username } = rows[0];
-                        const communityConfig = config[site];
+                        const { xauth_username } = rows[0];
 
-                        if (!communityConfig) {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
-                                content: t('CONFIGURATION_ERROR_SITE_NOT_FOUND', lang),
-                                flags: 64
-                            });
-                            return;
-                        }
-
-                        const newAccessToken = await refreshToken(userId, site);
+                        const newAccessToken = await refreshToken(userId);
 
                         if (newAccessToken) {
-                            await updateDiscordMetadata(communityConfig.discord.clientId, newAccessToken, xauth_username);
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
+                            await updateDiscordMetadata(newAccessToken, xauth_username, { linked: 1 });
+                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('UPDATE_SUCCESS', lang),
                                 flags: 64
                             });
                         } else {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
+                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('UPDATE_FAILURE', lang),
                                 flags: 64
                             });
@@ -161,7 +137,7 @@ export async function handleDiscordInteraction(interaction) {
                 case 'myinfo':
                 case 'whois':
                     const targetUserId = commandName === 'whois' && interaction.data.options?.[0]?.value || userId;
-                    const { rows: userRows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1 AND site = $2', [targetUserId, site]);
+                    const { rows: userRows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1', [targetUserId]);
 
                     let responseContent;
                     if (userRows.length > 0) {
@@ -179,33 +155,25 @@ export async function handleDiscordInteraction(interaction) {
 
                     // Defer the response immediately
                     const refreshFollowUp = async () => {
-                        const { rows } = await db.query('SELECT discord_access_token, xauth_username FROM linked_roles WHERE discord_id = $1 AND site = $2', [userToRefreshId, site]);
+                        const { rows } = await db.query('SELECT xauth_username FROM linked_roles WHERE discord_id = $1 AND site = $2', [userToRefreshId, 'default']);
                         if (!rows.length) {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
+                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('NO_LINKED_ACCOUNT_FOR_USER', lang, { userId: userToRefreshId }), flags: 64
                             });
                             return;
                         }
 
                         const { xauth_username } = rows[0];
-                        const communityConfig = config[site];
 
-                        if (!communityConfig) {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
-                                content: t('CONFIGURATION_ERROR_SITE_NOT_FOUND', lang), flags: 64
-                            });
-                            return;
-                        }
-
-                        const newAccessToken = await refreshToken(userToRefreshId, site);
+                        const newAccessToken = await refreshToken(userToRefreshId);
 
                         if (newAccessToken) {
-                            await updateDiscordMetadata(communityConfig.discord.clientId, newAccessToken, xauth_username);
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
+                            await updateDiscordMetadata(newAccessToken, xauth_username, { linked: 1 });
+                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('REFRESH_SUCCESS', lang, { userId: userToRefreshId }), flags: 64
                             });
                         } else {
-                            await axios.post(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}`, {
+                            await axios.post(`https://discord.com/api/v10/webhooks/${config.discord.clientId}/${interaction.token}`, {
                                 content: t('REFRESH_FAILURE', lang, { userId: userToRefreshId }), flags: 64
                             });
                         }

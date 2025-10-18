@@ -29,3 +29,5 @@ export function t(key, lang = 'en', replacements = {}) {
         return replacements[p1] !== undefined ? replacements[p1] : match;
     });
 }
+
+export { locales };
