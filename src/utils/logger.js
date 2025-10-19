@@ -1,16 +1,9 @@
-const chalk = {
-    red: '\x1b[31m',
-    reset: '\x1b[0m'
-};
-
 function log(message) {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] [INFO] ${message}`);
+    console.log(`${message}`);
 }
 
 function error(message) {
-    const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] ${chalk.red}[ERROR] ${message}${chalk.reset}`);
+    console.error(`${message}`);
 }
 
 export { log, error };

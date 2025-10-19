@@ -129,11 +129,12 @@ To get the ID of a Discord server (guild), you need to enable Developer Mode in 
 
 After a successful installation and configuration, you can start the bot, register its slash commands, and use the interactive CLI for management:
 
-1. **Start the bot:**
+1. **Start the bot (server and Discord client):**
+   To start the HTTP server and bring the Discord bot online, use:
    ```bash
-   node app.js
+   node app.js start-server
    ```
-   The bot will start a web server and an interactive command-line interface.
+   This command runs the server and bot in the background.
 
 2. **Register Application Metadata:**
    Run the following command in the bot's CLI. This only needs to be done once.
@@ -154,15 +155,15 @@ After a successful installation and configuration, you can start the bot, regist
 4. **Use Slash Commands:**
    Users can now use the registered slash commands (e.g., `/update`) in any Discord channel where the bot is present to refresh their linked role data.
 
-5. **Interactive Commands:**
-   Once the bot is running, you can type commands into the console:
-   - `help`: Displays a list of available commands.
-   - `list`: Lists all linked users from the database.
-   - `prune`: Removes users from the database who are no longer in the Discord server specified by `guildId`.
-   - `refresh-all`: Refreshes the Discord linked role metadata for all users in the database.
-   - `register-discord-commands`: Registers the application's slash commands with Discord.
-   - `register-metadata`: Registers the application's metadata schema with Discord.
-   - `quit`: Shuts down the bot gracefully.
+5. **CLI Management Commands:**
+   You can manage the application using the following command-line interface (CLI) commands:
+   - `node app.js help`: Displays a list of all available commands and their descriptions.
+   - `node app.js list`: Lists all linked users from the database.
+   - `node app.js prune`: Removes users from the database who are no longer in the Discord server specified by `guildId`. This command does not bring the Discord bot online.
+   - `node app.js refresh-all`: Refreshes the Discord linked role metadata for all users in the database. This command does not bring the Discord bot online.
+   - `node app.js register-discord-commands`: Registers the application's global slash commands with Discord. This command does not bring the Discord bot online.
+   - `node app.js register-metadata`: Registers the application's role connection metadata schema with Discord. This command does not bring the Discord bot online.
+   - `node app.js stop-server`: Stops the background HTTP server and Discord bot.
 
 ### Exposing Your Bot to the Internet (for Discord Interactions)
 

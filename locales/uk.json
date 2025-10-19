@@ -12,6 +12,8 @@
   "NO_LINKED_ACCOUNT_FOR_USER": "Не знайдено прив'язаного облікового запису для <@{userId}>.",
   "REFRESH_SUCCESS": "Дані прив'язаної ролі XAuthConnect для <@{userId}> оновлено!",
   "REFRESH_FAILURE": "Не вдалося оновити дані прив'язаної ролі XAuthConnect для <@{userId}>. Їхній токен може бути прострочений.",
+  "SETPRESENCE_SUCCESS": "Присутність бота оновлено: {name} (Тип: {type}, Статус: {status})",
+  "SETPRESENCE_FAILURE": "Не вдалося оновити присутність бота: {errorMessage}",
   "COMMAND_UPDATE_DESCRIPTION": "Оновити дані прив'язаної ролі XAuthConnect.",
   "COMMAND_PING_DESCRIPTION": "Перевірити, чи бот працює.",
   "COMMAND_WHOIS_DESCRIPTION": "Показує прив'язаний нікнейм XAuth для користувача Discord.",
@@ -19,6 +21,10 @@
   "COMMAND_MYINFO_DESCRIPTION": "Показує ваш прив'язаний нікнейм XAuth.",
   "COMMAND_REFRESH_DESCRIPTION": "Вручну оновлює метадані прив'язаної ролі для конкретного користувача Discord.",
   "COMMAND_REFRESH_OPTION_USER_DESCRIPTION": "Користувач Discord, дані якого потрібно оновити.",
+  "COMMAND_SETPRESENCE_DESCRIPTION": "Встановлює присутність бота (активність та статус).",
+  "COMMAND_SETPRESENCE_OPTION_NAME_DESCRIPTION": "Назва активності (наприклад, \"Грає в гру\")",
+  "COMMAND_SETPRESENCE_OPTION_TYPE_DESCRIPTION": "Тип активності (0=Грає, 1=Стрімить, 2=Слухає, 3=Дивиться, 5=Змагається)",
+  "COMMAND_SETPRESENCE_OPTION_STATUS_DESCRIPTION": "Статус бота (\"онлайн\", \"неактивний\", \"не турбувати\", \"офлайн\")",
   "METADATA_LINKED_NAME": "Акаунт прив'язано",
   "METADATA_LINKED_DESCRIPTION": "Чи користувач успішно прив'язав свій акаунт до XAuthConnect."
 }

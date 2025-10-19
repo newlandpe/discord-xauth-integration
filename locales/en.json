@@ -12,6 +12,8 @@
   "NO_LINKED_ACCOUNT_FOR_USER": "No linked account found for <@{userId}>.",
   "REFRESH_SUCCESS": "XAuthConnect linked role data for <@{userId}> has been updated!",
   "REFRESH_FAILURE": "Failed to update XAuthConnect linked role data for <@{userId}>. Their token might be expired.",
+  "SETPRESENCE_SUCCESS": "Bot presence updated to: {name} (Type: {type}, Status: {status})",
+  "SETPRESENCE_FAILURE": "Failed to update bot presence: {errorMessage}",
   "COMMAND_UPDATE_DESCRIPTION": "Update your XAuthConnect linked role data.",
   "COMMAND_PING_DESCRIPTION": "Check if the bot is alive.",
   "COMMAND_WHOIS_DESCRIPTION": "Shows the linked XAuth username for a Discord user.",
@@ -19,6 +21,10 @@
   "COMMAND_MYINFO_DESCRIPTION": "Shows your linked XAuth username.",
   "COMMAND_REFRESH_DESCRIPTION": "Manually refreshes the linked role metadata for a specific Discord user.",
   "COMMAND_REFRESH_OPTION_USER_DESCRIPTION": "The Discord user whose data to refresh.",
+  "COMMAND_SETPRESENCE_DESCRIPTION": "Sets the bot's presence (activity and status).",
+  "COMMAND_SETPRESENCE_OPTION_NAME_DESCRIPTION": "Activity name (e.g., \"Playing a game\")",
+  "COMMAND_SETPRESENCE_OPTION_TYPE_DESCRIPTION": "Activity type (0=Playing, 1=Streaming, 2=Listening, 3=Watching, 5=Competing)",
+  "COMMAND_SETPRESENCE_OPTION_STATUS_DESCRIPTION": "Bot status (\"online\", \"idle\", \"dnd\", \"offline\")",
   "METADATA_LINKED_NAME": "Account Linked",
   "METADATA_LINKED_DESCRIPTION": "Whether the user has successfully linked their account to XAuthConnect."
 }

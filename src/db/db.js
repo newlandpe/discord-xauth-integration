@@ -8,13 +8,29 @@ const pool = new pg.Pool({
     database: process.env.DB_DATABASE,
 });
 
+let poolEnded = false;
+
 export const db = {
     query: (text, params) => pool.query(text, params),
-    end: () => pool.end(),
+    end: async () => {
+        if (!poolEnded) {
+            await pool.end();
+            poolEnded = true;
+        }
+    },
 };
 
+let dbInitialized = false;
+
+let initializeDbPromise = null;
+
 export async function initializeDb() {
-    const createTableQuery = `
+    if (initializeDbPromise) {
+        return initializeDbPromise;
+    }
+
+    initializeDbPromise = (async () => {
+        const createTableQuery = `
         CREATE TABLE IF NOT EXISTS linked_roles (
             discord_id VARCHAR(255) PRIMARY KEY,
             xauth_id VARCHAR(255) NOT NULL,
@@ -23,11 +39,14 @@ export async function initializeDb() {
             discord_refresh_token TEXT NOT NULL
         );
     `;
-    try {
-        await pool.query(createTableQuery);
-        log('Database table "linked_roles" is ready.');
-    } catch (err) {
-        error(`Error initializing database table: ${err}`);
-        process.exit(1);
-    }
+        try {
+            await pool.query(createTableQuery);
+    
+        } catch (err) {
+            error(`Error initializing database table: ${err}`);
+            process.exit(1);
+        }
+    })();
+
+    return initializeDbPromise;
 }

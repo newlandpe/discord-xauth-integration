@@ -76,7 +76,7 @@ export async function refreshToken(discord_id) {
     }
 }
 
-export async function handleDiscordInteraction(interaction) {
+export async function handleDiscordInteraction(interaction, appServices) {
     const INTERACTION_RESPONSE_TYPE = {
         PONG: 1,
         CHANNEL_MESSAGE_WITH_SOURCE: 4,
@@ -195,6 +195,19 @@ export async function handleDiscordInteraction(interaction) {
                     };
                     refreshFollowUp(); // Execute the follow-up asynchronously
                     return { type: INTERACTION_RESPONSE_TYPE.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE, data: { flags: 64 } };
+
+                case 'setpresence':
+                    const name = interaction.data.options.find(opt => opt.name === 'name').value;
+                    const type = interaction.data.options.find(opt => opt.name === 'type').value;
+                    const status = interaction.data.options.find(opt => opt.name === 'status').value;
+
+                    try {
+                        await appServices.setBotPresence(name, type, status);
+                        return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: t('SETPRESENCE_SUCCESS', lang, { name, type, status }), flags: 64 } };
+                    } catch (err) {
+                        error(`Error handling setpresence command: ${err.message}`);
+                        return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: t('SETPRESENCE_FAILURE', lang, { errorMessage: err.message }), flags: 64 } };
+                    }
 
                 default:
                     return { type: INTERACTION_RESPONSE_TYPE.CHANNEL_MESSAGE_WITH_SOURCE, data: { content: t('UNKNOWN_COMMAND', lang), flags: 64 } };
