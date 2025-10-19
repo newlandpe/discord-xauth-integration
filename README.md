@@ -137,15 +137,15 @@ After a successful installation and configuration, you can start the bot, regist
    This command runs the server and bot in the background.
 
 2. **Register Application Metadata:**
-   Run the following command in the bot's CLI. This only needs to be done once.
+   Run the following command from your terminal. This only needs to be done once.
    ```
-   register-metadata
+   node app.js register-metadata
    ```
 
 3. **Register Discord Commands:**
-   Run the following command in the bot's CLI:
+   Run the following command from your terminal:
    ```
-   register-discord-commands
+   node app.js register-discord-commands
    ```
    This will register the application's slash commands with Discord.
 
